@@ -7,15 +7,17 @@ from aiohttp import web
 from app import service
 
 
-@aiohttp_jinja2.template('./app/templates/main_page.html')
-async def main_page(request: web.Request) -> Dict:
-    current_time = time.time()
-    answer = {}
+class MainPage(web.View):
 
-    belarusbank_dict = await service.BelarusbankHandleClass().get_result()
-    answer.update(belarusbank_dict)
+    @aiohttp_jinja2.template('./app/templates/main_page.html')
+    async def get(self) -> Dict:
+        current_time = time.time()
+        answer = {}
 
-    load_time = time.time() - current_time
-    answer.update({'load_time': load_time})
+        belarusbank_dict = await service.BelarusbankHandleClass().get_result()
+        answer.update(belarusbank_dict)
 
-    return answer
+        load_time = time.time() - current_time
+        answer.update({'load_time': load_time})
+
+        return answer

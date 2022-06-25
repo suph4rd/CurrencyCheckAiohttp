@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import time
 from typing import Optional
 
@@ -13,12 +14,13 @@ class AbstractHandleClass:
     prefix = None
 
     async def _get_answer(self) -> str:
+        logging.info("start getting answer")
         self.set_start_time()
         url = self._make_request()
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as response:
                 answer = await response.text()
-                print(answer)
+                logging.info("answer have got")
                 return answer
 
     def set_start_time(self) -> None:
