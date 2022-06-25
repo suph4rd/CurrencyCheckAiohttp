@@ -1,21 +1,14 @@
 import time
+from typing import Dict
 
 import aiohttp_jinja2
-import jinja2
 from aiohttp import web
-import service
+
+from app import service
 
 
-routes = web.RouteTableDef()
-
-
-app = web.Application()
-aiohttp_jinja2.setup(app, loader=jinja2.FileSystemLoader('.'))
-
-
-@routes.get('/')
-@aiohttp_jinja2.template('./templates/main_page.html')
-async def start(request):
+@aiohttp_jinja2.template('./app/templates/main_page.html')
+async def main_page(request: web.Request) -> Dict:
     current_time = time.time()
     answer = {}
 
@@ -26,7 +19,3 @@ async def start(request):
     answer.update({'load_time': load_time})
 
     return answer
-
-
-app.add_routes(routes)
-web.run_app(app, port=8000)

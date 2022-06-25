@@ -43,6 +43,7 @@ class AbstractHandleClass:
 
 class BelarusbankHandleClass(AbstractHandleClass):
     url = "https://belarusbank.by/api/kursExchange?city=%D0%9C%D0%B8%D0%BD%D1%81%D0%BA"
+    prefix = "belarusbank"
 
     def _handle_answer(self, answer) -> Optional[list | dict]:
         try:
