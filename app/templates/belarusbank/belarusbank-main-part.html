@@ -1,0 +1,10 @@
+<h4 style="text-align: center">Затраченное время: {{ belarusbank_time }}</h4>
+<div style="display: flex; margin-bottom: 2em">
+    {% for item in belarusbank_answer %}
+        <div style="margin: 15px">
+            <p><b>Контора:</b> {{ item.filials_text }} </p>
+            <p><b>USD покупка:</b> {{ item.USD_in }} </p>
+            <p><b>USD продажа:</b> {{ item.USD_out }} </p>
+        </div>
+    {% endfor %}
+</div>
