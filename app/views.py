@@ -11,13 +11,17 @@ class MainPage(web.View):
 
     @aiohttp_jinja2.template('./app/templates/main_page.html')
     async def get(self) -> Dict:
-        current_time = time.time()
-        answer = {}
+        return {}
 
+
+class InterfaceBankTemplate:
+    async def get(self) -> dict:
+        raise NotImplementedError()
+
+
+class BelarusbankBankTemplateView(InterfaceBankTemplate, web.View):
+
+    @aiohttp_jinja2.template('./app/templates/belarusbank/belarusbank-main-part.html')
+    async def get(self) -> dict:
         belarusbank_dict = await service.BelarusbankHandleClass().get_result()
-        answer.update(belarusbank_dict)
-
-        load_time = time.time() - current_time
-        answer.update({'load_time': load_time})
-
-        return answer
+        return belarusbank_dict
