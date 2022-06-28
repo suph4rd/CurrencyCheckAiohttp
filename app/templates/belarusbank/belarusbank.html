@@ -9,10 +9,15 @@
 </div>
 
 <script>
-    console.log("belarusnank-start-load")
-    axios.get("belarusbank-view/")
-        .then(function (response) {
-            let elemForReplace = document.querySelector(".main-part")
-            elemForReplace.innerHTML = response.data
+    document.addEventListener("DOMContentLoaded", function () {
+        console.log("belarusnank-start-load")
+        let elemForReplace = document.querySelector(".main-part")
+        axios.get("belarusbank-view/")
+            .then(function (response) {
+                elemForReplace.innerHTML = response.data
+            }).catch(function (err) {
+                console.log(err);
+                elemForReplace.innerHTML = "<h4 style='text-align: center'>Ошибка загрузки данных!</h4>"
         });
+    })
 </script>
