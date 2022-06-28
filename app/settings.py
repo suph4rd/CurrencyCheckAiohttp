@@ -14,3 +14,5 @@ def get_config(path: pathlib.Path):
 config_path = BASE_DIR / "config" / "app.yml"
 config = get_config(config_path)
 
+DATABASE_URL = "sqlite:///./db.sqlite3"
+
