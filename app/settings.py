@@ -1,18 +1,16 @@
+import os
 import pathlib
+from dotenv import load_dotenv
 
-import yaml
 
 BASE_DIR = pathlib.Path(__file__).parent
+dotenv_path = BASE_DIR.parent / 'local_settings.env'
+load_dotenv(dotenv_path)
 
 
-def get_config(path: pathlib.Path):
-    with open(path) as f:
-        config = yaml.safe_load(f)
-    return config
+APP_HOST = os.getenv('APP_HOST', "127.0.0.1")
+APP_PORT = os.getenv('APP_PORT', 8001)
+DATABASE_URL = os.getenv('DATABASE_URI', 'sqlite:///./db.sqlite3')
 
-
-config_path = BASE_DIR / "config" / "app.yml"
-config = get_config(config_path)
-
-DATABASE_URL = "sqlite:///./db.sqlite3"
+STATIC_PATH = BASE_DIR / "static"
 
