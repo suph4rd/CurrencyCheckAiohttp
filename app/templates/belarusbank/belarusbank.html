@@ -1,6 +1,7 @@
-<div style="border: solid black 2px; overflow: auto">
+<div style="border: 1px solid black;
+    border-radius: 0.25rem; margin: 1em">
     <h1 style="text-align: center">БеларусьБанк</h1>
-    <div class="main-part">
+    <div class="main-part-belarusbank">
         <p style="text-align: center">Загрузка, пожалуйста подождите!</p>
         <div class="loader">
             <div class="loader-item"></div>
@@ -11,7 +12,7 @@
 <script>
     document.addEventListener("DOMContentLoaded", function () {
         console.log("belarusnank-start-load")
-        let elemForReplace = document.querySelector(".main-part")
+        let elemForReplace = document.querySelector(".main-part-belarusbank")
         axios.get("belarusbank-view/")
             .then(function (response) {
                 elemForReplace.innerHTML = response.data
