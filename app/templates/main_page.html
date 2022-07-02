@@ -5,52 +5,21 @@
     <meta name="viewport"
           content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+    <link href="{{static('/css/comon_styles.css')}}" rel="stylesheet">
+
+    <script src="{{static('/js/axios.min.js')}}"></script>
+    <!-- Bootstrap CSS -->
+    <link href="{{static('/bootstrap/css/bootstrap.min.css')}}" rel="stylesheet" >
+    <script src="{{static('/bootstrap/js/bootstrap.bundle.min.js')}}"></script>
+
     <title>Курсы валют</title>
 </head>
 <body>
-    <h1>Курсы валют в разных банках</h1>
-    {% include './app/templates/belarusbank/belarusbank.html' %}
+    <div class="container-fluid">
+        <h1>Курсы валют из разных источников</h1>
+        {% include './app/templates/myfin/myfin.html' %}
+        {% include './app/templates/belarusbank/belarusbank.html' %}
+    </div>
 </body>
 </html>
-
-<style>
-.loader  {
-  margin:auto;
-  display:inline-block;
-  height:300px;
-  width:600px;
-  display:flex;
-  align-items:center;
-  justify-content:space-around;
-}
-
-.loader-item {
-  background:lightgray;
-  min-height:100px;
-  min-width:100px;
-  border-radius:50%;
-  animation: bounce 1s alternate infinite ease-in-out,
-    flash 3s alternate infinite ease-in-out;
-}
-
-@keyframes bounce {
-  from{
-    position:relative;
-    top:-10vh;
-  }
-  to{
-    position:relative;
-    top:10vh;
-  }
-}
-
-@keyframes flash{
-  from{
-    background:#fff;
-  }
-  to{
-    background:#444;
-  }
-}
-</style>

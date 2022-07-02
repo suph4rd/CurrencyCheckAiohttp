@@ -7,11 +7,11 @@ from app.routes import setup_routes
 from app import settings
 
 
-def start():
+def start() -> web.Application:
     current_app = web.Application()
+    current_app['static_root_url'] = "static"
     setup_routes(current_app)
     aiohttp_jinja2.setup(current_app, loader=jinja2.FileSystemLoader('.'))
-    current_app["config"] = settings.config
     logging.basicConfig(level=logging.DEBUG)
     return current_app
 
@@ -20,4 +20,4 @@ current_app = start()
 
 
 if __name__ == "__main__":
-    web.run_app(current_app, port=settings.config.get("port", 8000))
+    web.run_app(current_app, port=settings.APP_PORT)
