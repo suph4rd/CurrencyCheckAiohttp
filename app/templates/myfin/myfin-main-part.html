@@ -1,0 +1,52 @@
+<h4 style="text-align: center">Затраченное время: {{ myfin_time }}</h4>
+<div class="row" style="margin-bottom: 2em; justify-content: center">
+    {% for item in myfin_answer %}
+        <div class="card col-10 col-md-4 col-lg-3 col-xl-2" style="margin: 15px">
+            <div class="row mb-2">
+                <div class="col fw-bold">Название банка:</div>
+                <div class="col">{{ item.name }}</div>
+            </div>
+
+            <div class="row mb-2">
+                <div class="col fw-bold">{{ currency_enum.USD_buy.value }}</div>
+                <div class="col">{{ item.USD_buy }}</div>
+            </div>
+
+            <div class="row mb-2">
+                <div class="col fw-bold">{{ currency_enum.USD_sell.value }}</div>
+                <div class="col">{{ item.USD_sell }}</div>
+            </div>
+
+            <div class="row mb-2">
+                <div class="col fw-bold">{{ currency_enum.EUR_buy.value }}</div>
+                <div class="col">{{ item.EUR_buy }}</div>
+            </div>
+
+            <div class="row mb-2">
+                <div class="col fw-bold">{{ currency_enum.EUR_sell.value }}</div>
+                <div class="col">{{ item.EUR_sell }}</div>
+            </div>
+
+            <div class="row mb-2">
+                <div class="col fw-bold">{{ currency_enum.RUB_buy.value }}</div>
+                <div class="col">{{ item.RUB_buy }}</div>
+            </div>
+
+            <div class="row mb-2">
+                <div class="col fw-bold">{{ currency_enum.RUB_sell.value }}</div>
+                <div class="col">{{ item.RUB_sell }}</div>
+            </div>
+
+            <div class="row mb-2">
+                <div class="col fw-bold">{{ currency_enum.EUR_USD_buy.value }}</div>
+                <div class="col">{{ item.EUR_USD_buy }}</div>
+            </div>
+
+            <div class="row">
+                <div class="col fw-bold">{{ currency_enum.EUR_USD_sell.value }}</div>
+                <div class="col">{{ item.EUR_USD_sell }}</div>
+            </div>
+
+        </div>
+    {% endfor %}
+</div>
