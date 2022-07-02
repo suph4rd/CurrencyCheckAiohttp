@@ -1,10 +1,37 @@
 <h4 style="text-align: center">Затраченное время: {{ belarusbank_time }}</h4>
-<div style="display: flex; margin-bottom: 2em">
+<div class="row" style="margin-bottom: 2em; justify-content: center">
     {% for item in belarusbank_answer %}
-        <div style="margin: 15px">
-            <p><b>Контора:</b> {{ item.filials_text }} </p>
-            <p><b>USD покупка:</b> {{ item.USD_in }} </p>
-            <p><b>USD продажа:</b> {{ item.USD_out }} </p>
+        <div class="card col-10 col-md-4 col-lg-3 col-xl-2" style="margin: 15px">
+            <div class="row mb-2">
+                <div class="col fw-bold">Организация:</div>
+                <div class="col">{{ item.filials_text }}</div>
+            </div>
+            <div class="row mb-2">
+                <div class="col fw-bold">USD покупка:</div>
+                <div class="col">{{ item.USD_in }}</div>
+            </div>
+            <div class="row mb-2">
+                <div class="col fw-bold">USD продажа:</div>
+                <div class="col">{{ item.USD_out }}</div>
+            </div>
+
+            <div class="row mb-2">
+                <div class="col fw-bold">EUR продажа:</div>
+                <div class="col">{{ item.EUR_in }}</div>
+            </div>
+            <div class="row mb-2">
+                <div class="col fw-bold">EUR продажа:</div>
+                <div class="col">{{ item.EUR_out }}</div>
+            </div>
+
+            <div class="row mb-2">
+                <div class="col fw-bold">RUB продажа:</div>
+                <div class="col">{{ item.RUB_in }}</div>
+            </div>
+            <div class="row mb-2">
+                <div class="col fw-bold">RUB продажа:</div>
+                <div class="col">{{ item.RUB_out }}</div>
+            </div>
         </div>
     {% endfor %}
 </div>
