@@ -1,0 +1,24 @@
+<div style="border: 1px solid black;
+    border-radius: 0.25rem; margin: 1em">
+    <h1 style="text-align: center">Сайт myfin.by</h1>
+    <div class="main-part-myfin">
+        <p style="text-align: center">Загрузка, пожалуйста подождите!</p>
+        <div class="loader">
+            <div class="loader-item"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        console.log("myfin-start-load")
+        let elemForReplace = document.querySelector(".main-part-myfin")
+        axios.get("myfin-view/")
+            .then(function (response) {
+                elemForReplace.innerHTML = response.data
+            }).catch(function (err) {
+                console.log(err);
+                elemForReplace.innerHTML = "<h4 style='text-align: center'>Ошибка загрузки данных!</h4>"
+        });
+    })
+</script>

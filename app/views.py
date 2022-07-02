@@ -1,4 +1,3 @@
-import time
 from typing import Dict
 
 import aiohttp_jinja2
@@ -15,21 +14,26 @@ class MainPage(web.View):
         return {}
 
 
-class InterfaceBankTemplate:
-    async def get(self) -> Response:
-        raise NotImplementedError()
-
-
-class BelarusbankBankTemplateView(InterfaceBankTemplate, web.View):
+class AbstractBankTemplate:
+    handler_class: service.AbstractHandleClass = None
+    template: str = None
 
     async def get(self) -> Response:
-        belarusbank_answer = await service.BelarusbankHandleClass().get_result()
-        if isinstance(belarusbank_answer, Response):
-            return belarusbank_answer
-        elif isinstance(belarusbank_answer, (dict, list)):
+        answer = await self.handler_class().get_result()
+        if isinstance(answer, (dict, list)):
             return aiohttp_jinja2.render_template(
-                './app/templates/belarusbank/belarusbank-main-part.html',
+                self.template,
                 self.request,
-                belarusbank_answer
+                answer
             )
         return web.Response(status=404)
+
+
+class BelarusbankBankTemplateView(AbstractBankTemplate, web.View):
+    template = "./app/templates/belarusbank/belarusbank-main-part.html"
+    handler_class = service.BelarusbankHandleClass
+
+
+class MyfinBankTemplateView(AbstractBankTemplate, web.View):
+    template = "./app/templates/myfin/myfin-main-part.html"
+    handler_class = service.MyfinHandleClass
