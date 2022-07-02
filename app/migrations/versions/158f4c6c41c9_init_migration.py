@@ -10,6 +10,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
+from sqlalchemy.dialects import postgresql
+
 revision = '158f4c6c41c9'
 down_revision = None
 branch_labels = None
@@ -21,7 +23,9 @@ def upgrade() -> None:
     op.create_table('response',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('created_at', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
-    sa.Column('text_answer', sa.String(), nullable=True),
+    sa.Column('text_answer', sa.TEXT(), nullable=True),
+    sa.Column('answer_json', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
+    sa.Column('type_service', sa.String(), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
     # ### end Alembic commands ###
