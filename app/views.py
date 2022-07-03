@@ -14,9 +14,25 @@ class MainPage(web.View):
         return {}
 
 
-class AbstractBankTemplate:
+class AbstractBankInterface:
     handler_class: service.AbstractHandleClass = None
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not self.handler_class:
+            raise ValueError("Обязательное поле handler_class не назначено")
+
+    async def get(self) -> Response:
+        raise NotImplementedError()
+
+
+class AbstractBankTemplate(AbstractBankInterface):
     template: str = None
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not self.template:
+            raise ValueError("Обязательное поле template не назначено")
 
     async def get(self) -> Response:
         answer = await self.handler_class().get_result()
@@ -36,4 +52,20 @@ class BelarusbankBankTemplateView(AbstractBankTemplate, web.View):
 
 class MyfinBankTemplateView(AbstractBankTemplate, web.View):
     template = "./app/templates/myfin/myfin-main-part.html"
+    handler_class = service.MyfinHandleClass
+
+
+class AbstractBankApi(AbstractBankInterface):
+    async def get(self) -> Response:
+        answer = await self.handler_class(is_api=True).get_result()
+        if isinstance(answer, (dict, list)):
+            return web.json_response(answer)
+        return web.json_response({"message": "Не найдено"}, status=404)
+
+
+class BelarusbankBankApi(AbstractBankApi, web.View):
+    handler_class = service.BelarusbankHandleClass
+
+
+class MyfinBankApi(AbstractBankApi, web.View):
     handler_class = service.MyfinHandleClass
