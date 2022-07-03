@@ -10,7 +10,11 @@ load_dotenv(dotenv_path)
 
 APP_HOST = os.getenv('APP_HOST', "127.0.0.1")
 APP_PORT = os.getenv('APP_PORT', 8001)
-DATABASE_URL = os.getenv('DATABASE_URI', 'sqlite:///./db.sqlite3')
+
+if not os.getenv('DATABASE_URI'):
+    raise ConnectionError("set environment variable DATABASE_URI or create env file "
+                          "(docker_settings.env or local_settings.env, depends of the way of start)")
+DATABASE_URL = os.getenv('DATABASE_URI')
 
 STATIC_PATH = BASE_DIR / "static"
 
