@@ -19,6 +19,11 @@ class AbstractHandleClass:
     url: str = None
     start_time: time = None
     prefix: str = None
+    is_api: bool = False
+
+    def __init__(self, *args, **kwargs):
+        if kwargs.get("is_api"):
+            self.is_api = True
 
     async def _get_answer(self) -> Optional[dict | list]:
         logging.info(f"start getting answer ({self.prefix or ''})")
@@ -98,7 +103,7 @@ class MyfinHandleClass(AbstractHandleClass):
     async def get_result(self) -> Optional[dict]:
         answer = await super(MyfinHandleClass, self).get_result()
         if isinstance(answer, dict):
-            answer.update({"currency_enum": CurrencyEnum})
+            answer.update({"currency_enum": CurrencyEnum.get_dict() if self.is_api else CurrencyEnum})
         return answer
 
     @staticmethod
