@@ -10,7 +10,7 @@ from aiohttp.web_exceptions import HTTPExpectationFailed
 from bs4 import BeautifulSoup
 
 from app import models
-from app.database import sync_session
+from app.database import async_session
 from app.enums import CurrencyEnum
 from app.exceptions import HandleError, DatabaseSaveError
 
@@ -38,7 +38,7 @@ class AbstractHandleClass:
                         logging.error(str(err))
                         raise HandleError
 
-                    self._save_answer(answer)
+                    await self._save_answer(answer)
                     logging.info(f"answer have got ({self.prefix or ''})")
                     return answer
             except ClientConnectorError as err:
@@ -61,9 +61,9 @@ class AbstractHandleClass:
             f"{self.prefix}_time": self._get_spent_time(),
         }
 
-    def _save_answer(self, answer: dict) -> None:
+    async def _save_answer(self, answer: dict) -> None:
         try:
-            with sync_session() as session:
+            async with async_session() as session:
                 if isinstance(answer, (dict, list)):
                     obj = models.Response(
                         answer_json=answer, type_service=self.prefix
@@ -75,7 +75,7 @@ class AbstractHandleClass:
                 else:
                     raise DatabaseSaveError()
                 session.add(obj)
-                session.commit()
+                await session.commit()
                 logging.info(f"saved in database ({self.prefix or ''})")
         except Exception as err:
             logging.error(str(err))
