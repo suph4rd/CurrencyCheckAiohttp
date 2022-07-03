@@ -66,6 +66,42 @@ class AbstractBankApi(AbstractBankInterface):
 class BelarusbankBankApi(AbstractBankApi, web.View):
     handler_class = service.BelarusbankHandleClass
 
+    async def get(self) -> Response:
+        """
+        ---
+        description: This end-point return information about currency exchange from Belarusbank api.
+        tags:
+        - API
+        produces:
+        - application/json
+        responses:
+            "200":
+                description: successful operation. Return actual exchange courses from Belarusbank api
+            "400":
+                description: Bade request. (return description of problem)
+            "417":
+                description: source service isn't available
+        """
+        return await super().get()
+
 
 class MyfinBankApi(AbstractBankApi, web.View):
     handler_class = service.MyfinHandleClass
+
+    async def get(self) -> Response:
+        """
+        ---
+        description: This end-point return information about currency exchange from Myfin.by.
+        tags:
+        - API
+        produces:
+        - application/json
+        responses:
+            "200":
+                description: successful operation. Return actual exchange courses from Myfin.by
+            "400":
+                description: Bade request. (return description of problem)
+            "417":
+                description: source service isn't available
+        """
+        return await super().get()
