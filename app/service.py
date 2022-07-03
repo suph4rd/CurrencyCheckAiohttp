@@ -38,12 +38,7 @@ class AbstractHandleClass:
                     return answer
             except ClientConnectorError as err:
                 logging.error(str(err))
-                raise HTTPExpectationFailed(body=str(err))
-            except HandleError as err:
-                logging.error(str(err))
-                raise web.HTTPBadRequest(body=str(err))
-            except DatabaseSaveError as err:
-                raise web.HTTPBadRequest(body=str(err))
+                raise HTTPExpectationFailed(body="Ошибка подключения к серверу!")
 
     def set_start_time(self) -> None:
         self.start_time = time.time()
