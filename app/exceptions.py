@@ -1,14 +1,26 @@
+from typing import Optional, Any
+from aiohttp.web_exceptions import HTTPBadRequest, HTTPException
 
 
-class HandleError(Exception):
+class HTTPErrorMixin(HTTPException):
+    text: Optional[str] = None
 
-    def __str__(self):
-        print(super().__str__())
-        return "Ошибка распаковки ответа!"
+    def __init__(
+            self,
+            *args,
+            **kwargs,
+    ) -> None:
+        if not kwargs.get("text"):
+            kwargs["text"] = self.text
+        super().__init__(
+            *args,
+            **kwargs
+        )
 
 
-class DatabaseSaveError(Exception):
+class HandleError(HTTPErrorMixin, HTTPBadRequest):
+    text = "Ошибка распаковки ответа!"
 
-    def __str__(self):
-        print(super().__str__())
-        return "Ошибка записи объекта в базу данных!"
+
+class DatabaseSaveError(HTTPErrorMixin, HTTPBadRequest):
+    text = "Ошибка записи объекта в базу данных!"
