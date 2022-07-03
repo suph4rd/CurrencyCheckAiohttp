@@ -3,8 +3,10 @@
     <h1 style="text-align: center">Сайт myfin.by</h1>
     <div class="main-part-myfin">
         <p style="text-align: center">Загрузка, пожалуйста подождите!</p>
-        <div class="loader">
-            <div class="loader-item"></div>
+        <div class="d-flex justify-content-center">
+          <div class="spinner-border" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
         </div>
     </div>
 </div>
@@ -18,7 +20,7 @@
                 elemForReplace.innerHTML = response.data
             }).catch(function (err) {
                 console.log(err);
-                elemForReplace.innerHTML = "<h4 style='text-align: center'>Ошибка загрузки данных!</h4>"
+                elemForReplace.innerHTML = `<h4 style='text-align: center'>${ err.response.data ? err.response.data :"Ошибка загрузки данных!"}</h4>`
         });
     })
 </script>
