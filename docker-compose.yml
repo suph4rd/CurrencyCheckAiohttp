@@ -1,31 +1,31 @@
 version: "3.3"
 
 services:
-  app:
+  project_dev:
     build:
       context: .
       dockerfile: ./build/Dockerfile
-    env_file:
-      - docker_settings.env
+    environment:
+      APP_HOST: "0.0.0.0"
+      APP_PORT: "7777"
+      DATABASE_URI: "postgresql+asyncpg://test:1234@db_dev:5432/currency_db"
+      DATABASE_URI_MIGRATION: "postgresql+psycopg2://test:1234@db_dev:5432/currency_db"
+
     command: > 
-      sh -c "cd ./app & 
-             alembic upgrade head &
-             cd .. &
+      sh -c "cd ./app && 
+             alembic upgrade head &&
+             cd .. &&
              gunicorn app.server:current_app --bind 0.0.0.0:7777 --worker-class aiohttp.GunicornWebWorker --workers 4"
     ports:
       - '7777:7777'
     depends_on:
-      - db
+      - db_dev
 
-  db:
+  db_dev:
     image: postgres:14.1-alpine
-    env_file:
-      - docker_settings.env
+    environment:
+      POSTGRES_DB: "currency_db"
+      POSTGRES_USER: "test"
+      POSTGRES_PASSWORD: "1234"
     ports:
       - '54321:5432'
-    volumes:
-      - db:/var/lib/postgresql/data
-
-
-volumes:
-  db:

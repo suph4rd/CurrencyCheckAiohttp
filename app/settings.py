@@ -15,6 +15,7 @@ if not os.getenv('DATABASE_URI'):
     raise ConnectionError("set environment variable DATABASE_URI or create env file "
                           "(docker_settings.env or local_settings.env, depends of the way of start)")
 DATABASE_URL = os.getenv('DATABASE_URI')
+DATABASE_URI_MIGRATION = os.getenv('DATABASE_URI_MIGRATION')
 
 STATIC_PATH = BASE_DIR / "static"
 
