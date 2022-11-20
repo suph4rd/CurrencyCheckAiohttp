@@ -1,0 +1,31 @@
+version: "3.3"
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: ./build/Dockerfile
+    env_file:
+      - docker_settings.env
+    command: > 
+      sh -c "cd ./app & 
+             alembic upgrade head &
+             cd .. &
+             gunicorn app.server:current_app --bind 0.0.0.0:7777 --worker-class aiohttp.GunicornWebWorker --workers 4"
+    ports:
+      - '7777:7777'
+    depends_on:
+      - db
+
+  db:
+    image: postgres:14.1-alpine
+    env_file:
+      - docker_settings.env
+    ports:
+      - '54321:5432'
+    volumes:
+      - db:/var/lib/postgresql/data
+
+
+volumes:
+  db:
