@@ -43,7 +43,7 @@ class AbstractHandleClass:
                     return answer
             except ClientConnectorError as err:
                 logging.error(str(err))
-                raise HTTPExpectationFailed(body="Ошибка подключения к серверу!")
+                raise HTTPExpectationFailed(text="Ошибка подключения к серверу!")
 
     def set_start_time(self) -> None:
         self.start_time = time.time()
@@ -110,25 +110,27 @@ class MyfinHandleClass(AbstractHandleClass):
     def get_generator(any_iterable_obj: Iterable) -> Generator:
         for item in any_iterable_obj:
             yield item
-        raise StopIteration()
 
     def __get_answer(self, answer: str) -> Optional[list]:
         handled_answer = []
         soup = BeautifulSoup(answer, 'html.parser')
         banks_body = soup.select_one("tbody#currency_tbody")
+        if banks_body is None:
+            raise ValueError("Myfin currency table is missing")
         banks_list_tr = banks_body.select("tr.tr-tb")
         for bank_tr in banks_list_tr:
             bank_item = {}
-            is_first = False
-            currency_keys = self.get_generator(CurrencyEnum.__members__.keys())
-            for td in bank_tr.find_all("td"):
-                if not is_first:
-                    bank_item["name"] = td.find("span").get_text() or "Безымянный"
-                    is_first = True
-                    continue
-                currency_key = next(currency_keys)
-                bank_item[currency_key] = td.get_text()
+            cells = bank_tr.find_all("td", recursive=False)
+            currency_keys = list(CurrencyEnum.__members__)
+            if len(cells) < len(currency_keys) + 1:
+                raise ValueError("Myfin currency row is incomplete")
+            name = cells[0].find("span")
+            bank_item["name"] = (name or cells[0]).get_text(strip=True) or "Безымянный"
+            for key, cell in zip(currency_keys, cells[1:]):
+                bank_item[key] = cell.get_text(strip=True)
             handled_answer.append(bank_item)
 
-        return handled_answer or None
+        if not handled_answer:
+            raise ValueError("Myfin currency table is empty")
+        return handled_answer
 
