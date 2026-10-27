@@ -1,2 +1,5 @@
-#!/bin/bash
-gunicorn app.server:current_app --bind localhost:8000 --worker-class aiohttp.GunicornWebWorker --workers 4
+#!/usr/bin/env bash
+exec gunicorn app.server:current_app \
+    --bind localhost:8000 \
+    --worker-class aiohttp.GunicornWebWorker \
+    --workers 4

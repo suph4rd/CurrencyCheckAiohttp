@@ -17,5 +17,13 @@ POSTGRES_USER=db_user
 POSTGRES_PASSWORD=db_user_pass
 ```
 
-And next, you should to run deploy.sh file <br>
-In the end project will available on the 7777 port
+Run `./deploy.sh` to build and start the production services. Existing build
+layers are reused, and changed services are recreated without removing images.
+The application is available at `http://localhost:99`.
+
+For local development, run `./db_run.sh` to start the development database in
+the foreground. Configure
+`local_settings.env` and apply migrations before running `./start.sh`, which
+starts Gunicorn at `http://localhost:8000` using the active Python environment.
+
+Run all scripts from the repository root.
