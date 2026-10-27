@@ -45,7 +45,7 @@ def run_migrations_offline() -> None:
 
     """
     # url = config.get_main_option("sqlalchemy.url")
-    url = config.get_main_option(settings.DATABASE_URI_MIGRATION)
+    url = settings.DATABASE_URI_MIGRATION
     context.configure(
         url=url,
         target_metadata=target_metadata,

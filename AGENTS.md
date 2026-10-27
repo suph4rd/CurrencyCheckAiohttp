@@ -6,20 +6,20 @@ Communicate with the user in Russian, including replies, explanations, and progr
 
 ## Project Structure & Module Organization
 
-This Python 3.10 application collects currency exchange rates from Belarusbank and Myfin, serves HTML and JSON through aiohttp, and stores responses in PostgreSQL.
+This Python 3.15.2 application collects currency exchange rates from Belarusbank and Myfin, serves HTML and JSON through aiohttp, and stores responses in PostgreSQL.
 
 - `app/server.py` initializes the application; `routes.py` maps URLs and `views.py` implements HTTP handlers.
 - `app/service.py` fetches, parses, and persists provider responses.
 - `app/database.py` and `models.py` define asynchronous SQLAlchemy access and database models.
 - `app/migrations/` contains Alembic migrations; `app/alembic.ini` configures them.
 - `app/templates/` contains Jinja2 templates; `app/static/` contains CSS, JavaScript, and bundled Bootstrap assets.
-- `build/`, `nginx/`, and the Compose files define container deployment. No test directory currently exists.
+- `build/`, `nginx/`, and the Compose files define container deployment. Tests are in `tests/`.
 
 ## Build, Test, and Development Commands
 
 Run commands from the repository root unless stated otherwise.
 
-- `python3.10 -m venv .venv` and `source .venv/bin/activate`: create and activate a local environment.
+- `python3.15 -m venv .venv` and `source .venv/bin/activate`: create and activate a local environment.
 - `pip install -r requirements.txt`: install pinned dependencies.
 - `docker compose up --build`: build and run the development application and PostgreSQL; access the application at `http://localhost:7777`.
 - `cd app && alembic upgrade head`: apply migrations with database environment variables configured.
@@ -32,7 +32,7 @@ Use four-space indentation, snake_case for functions and variables, PascalCase f
 
 ## Testing Guidelines
 
-No automated test framework or coverage threshold is configured. Verify changes against the relevant HTML and `/api/` routes, including provider failures and database persistence. For new automated tests, use a `tests/` directory with `test_*.py` filenames; document dependencies and the execution command. Mock upstream responses for repeatable parser tests.
+Tests use standard-library `unittest` and aiohttp test utilities. Run `python -m unittest discover -s tests -v`. No coverage threshold is configured. Verify changes against the relevant HTML and `/api/` routes, including provider failures and database persistence. For new automated tests, use a `tests/` directory with `test_*.py` filenames; document dependencies and the execution command. Mock upstream responses for repeatable parser tests.
 
 ## Commit & Pull Request Guidelines
 

@@ -2,7 +2,7 @@ import aiohttp_jinja2
 import jinja2
 from aiohttp import web
 import logging
-from aiohttp_swagger import *
+from aiohttp_swagger import setup_swagger
 
 from app.routes import setup_routes
 from app import settings
@@ -10,7 +10,7 @@ from app import settings
 
 def start() -> web.Application:
     current_app = web.Application()
-    current_app['static_root_url'] = "static"
+    current_app[aiohttp_jinja2.static_root_key] = "/static"
     setup_routes(current_app)
     setup_swagger(current_app)
     aiohttp_jinja2.setup(current_app, loader=jinja2.FileSystemLoader('.'))
