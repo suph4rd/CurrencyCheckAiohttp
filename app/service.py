@@ -114,20 +114,27 @@ class MyfinHandleClass(AbstractHandleClass):
     def __get_answer(self, answer: str) -> Optional[list]:
         handled_answer = []
         soup = BeautifulSoup(answer, 'html.parser')
-        banks_body = soup.select_one("tbody#currency_tbody")
+        banks_body = soup.select_one("table.currencies-courses--bordered > tbody.sort_body")
         if banks_body is None:
             raise ValueError("Myfin currency table is missing")
-        banks_list_tr = banks_body.select("tr.tr-tb")
+        banks_list_tr = banks_body.select(
+            ':scope > tr.currencies-courses__row-main[data-row-type="default"]'
+        )
+        currency_keys = ("USD_buy", "USD_sell", "EUR_buy", "EUR_sell", "RUB_buy", "RUB_sell")
         for bank_tr in banks_list_tr:
-            bank_item = {}
+            bank_item = {"EUR_USD_buy": None, "EUR_USD_sell": None}
             cells = bank_tr.find_all("td", recursive=False)
-            currency_keys = list(CurrencyEnum.__members__)
-            if len(cells) < len(currency_keys) + 1:
+            currency_cells = bank_tr.select(':scope > td.currencies-courses__currency-cell')
+            if not cells or len(currency_cells) != len(currency_keys):
                 raise ValueError("Myfin currency row is incomplete")
-            name = cells[0].find("span")
-            bank_item["name"] = (name or cells[0]).get_text(strip=True) or "Безымянный"
-            for key, cell in zip(currency_keys, cells[1:]):
-                bank_item[key] = cell.get_text(strip=True)
+            name = cells[0].find("span", recursive=False)
+            bank_item["name"] = name.get_text(" ", strip=True) if name else "Безымянный"
+            bank_item["name"] = bank_item["name"] or "Безымянный"
+            for key, cell in zip(currency_keys, currency_cells):
+                value = cell.get_text(strip=True)
+                if not value:
+                    raise ValueError("Myfin currency row is incomplete")
+                bank_item[key] = value
             handled_answer.append(bank_item)
 
         if not handled_answer:
