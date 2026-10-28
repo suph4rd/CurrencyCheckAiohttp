@@ -43,7 +43,7 @@ class AbstractHandleClass:
                     return answer
             except ClientConnectorError as err:
                 logging.error(str(err))
-                raise HTTPExpectationFailed(body="Ошибка подключения к серверу!")
+                raise HTTPExpectationFailed(text="Ошибка подключения к серверу!")
 
     def set_start_time(self) -> None:
         self.start_time = time.time()
@@ -110,25 +110,34 @@ class MyfinHandleClass(AbstractHandleClass):
     def get_generator(any_iterable_obj: Iterable) -> Generator:
         for item in any_iterable_obj:
             yield item
-        raise StopIteration()
 
     def __get_answer(self, answer: str) -> Optional[list]:
         handled_answer = []
         soup = BeautifulSoup(answer, 'html.parser')
-        banks_body = soup.select_one("tbody#currency_tbody")
-        banks_list_tr = banks_body.select("tr.tr-tb")
+        banks_body = soup.select_one("table.currencies-courses--bordered > tbody.sort_body")
+        if banks_body is None:
+            raise ValueError("Myfin currency table is missing")
+        banks_list_tr = banks_body.select(
+            ':scope > tr.currencies-courses__row-main[data-row-type="default"]'
+        )
+        currency_keys = ("USD_buy", "USD_sell", "EUR_buy", "EUR_sell", "RUB_buy", "RUB_sell")
         for bank_tr in banks_list_tr:
-            bank_item = {}
-            is_first = False
-            currency_keys = self.get_generator(CurrencyEnum.__members__.keys())
-            for td in bank_tr.find_all("td"):
-                if not is_first:
-                    bank_item["name"] = td.find("span").get_text() or "Безымянный"
-                    is_first = True
-                    continue
-                currency_key = next(currency_keys)
-                bank_item[currency_key] = td.get_text()
+            bank_item = {"EUR_USD_buy": None, "EUR_USD_sell": None}
+            cells = bank_tr.find_all("td", recursive=False)
+            currency_cells = bank_tr.select(':scope > td.currencies-courses__currency-cell')
+            if not cells or len(currency_cells) != len(currency_keys):
+                raise ValueError("Myfin currency row is incomplete")
+            name = cells[0].find("span", recursive=False)
+            bank_item["name"] = name.get_text(" ", strip=True) if name else "Безымянный"
+            bank_item["name"] = bank_item["name"] or "Безымянный"
+            for key, cell in zip(currency_keys, currency_cells):
+                value = cell.get_text(strip=True)
+                if not value:
+                    raise ValueError("Myfin currency row is incomplete")
+                bank_item[key] = value
             handled_answer.append(bank_item)
 
-        return handled_answer or None
+        if not handled_answer:
+            raise ValueError("Myfin currency table is empty")
+        return handled_answer
 
