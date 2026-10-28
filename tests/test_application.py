@@ -1,6 +1,7 @@
 import logging
 import os
 import unittest
+from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 os.environ.setdefault('DATABASE_URI', 'postgresql+asyncpg://test:test@localhost/currencycheck_test')
@@ -17,9 +18,10 @@ from app.server import start
 logging.getLogger().setLevel(logging.CRITICAL)
 
 
-MYFIN_HTML = ('<table><tbody id="currency_tbody"><tr class="tr-tb">'
+MYFIN_HTML = ('<table class="currencies-courses--bordered"><tbody class="sort_body">'
+              '<tr class="currencies-courses__row-main" data-row-type="default">'
               '<td><span>Test Bank</span></td>'
-              + ''.join(f'<td>{i}.25</td>' for i in range(8))
+              + ''.join(f'<td class="currencies-courses__currency-cell">{i}.25</td>' for i in range(6))
               + '<td>extra link</td></tr></tbody></table>')
 BANK_JSON = [{'filials_text': 'Test Bank', 'USD_in': '3.25'}]
 
@@ -88,21 +90,56 @@ class ApplicationTests(unittest.IsolatedAsyncioTestCase):
                 self.assertIsInstance(data[f'{provider}_time'], float)
                 if provider == 'myfin':
                     self.assertEqual(data['currency_enum'], CurrencyEnum.get_dict())
-                    self.assertEqual(data['myfin_answer'][0]['EUR_USD_sell'], '7.25')
+                    self.assertEqual(data['myfin_answer'][0]['RUB_sell'], '5.25')
+                    self.assertIsNone(data['myfin_answer'][0]['EUR_USD_buy'])
+                    self.assertIsNone(data['myfin_answer'][0]['EUR_USD_sell'])
                 else:
                     self.assertEqual(data['belarusbank_answer'], BANK_JSON)
         self.assertEqual(self.save.await_count, 4)
 
     async def test_invalid_upstream_data(self):
-        for body in ('not a table', '<tbody id="currency_tbody"></tbody>',
-                     '<tbody id="currency_tbody"><tr class="tr-tb"><td>x</td></tr></tbody>'):
+        for body in ('not a table',
+                     '<table class="currencies-courses--bordered"><tbody class="sort_body"></tbody></table>',
+                     MYFIN_HTML.replace('<td class="currencies-courses__currency-cell">0.25</td>', ''),
+                     MYFIN_HTML.replace('0.25', '')):
             self.body = body
-            response = await self.client.get('/api/myfin-view/')
-            self.assertEqual(response.status, 400)
+            for path in ('/myfin-view/', '/api/myfin-view/'):
+                response = await self.client.get(path)
+                self.assertEqual(response.status, 400)
         self.bad_json = True
         response = await self.client.get('/api/belarusbank-view/')
         self.assertEqual(response.status, 400)
         self.save.assert_not_awaited()
+
+    async def test_current_myfin_snapshot(self):
+        self.body = (Path(__file__).parent / 'fixtures' / 'myfin_current.html').read_text(encoding='utf-8')
+        expected = []
+        for name, rates in (
+            ('Альфа Банк', ('2.935', '2.97', '3.27', '3.3', '3.4767', '3.665')),
+            ('Банк БелВЭБ', ('2.92', '2.965', '3.25', '3.35', '3.46', '3.68')),
+            ('СтатусБанк', ('2.948*', '2.948', '3.282', '3.282', '3.4767', '3.625')),
+        ):
+            item = dict(zip(('USD_buy', 'USD_sell', 'EUR_buy', 'EUR_sell', 'RUB_buy', 'RUB_sell'), rates))
+            item.update(name=name, EUR_USD_buy=None, EUR_USD_sell=None)
+            expected.append(item)
+        response = await self.client.get('/api/myfin-view/')
+        self.assertEqual(response.status, 200)
+        data = await response.json()
+        self.assertEqual(data['myfin_answer'], expected)
+        self.save.assert_awaited_once_with(expected)
+
+        response = await self.client.get('/myfin-view/')
+        self.assertEqual(response.status, 200)
+        html = await response.text()
+        for item in expected:
+            self.assertIn(item['name'], html)
+        self.assertEqual(html.count('Название банка:'), 3)
+        for unwanted in ('EUR-&gt;USD', 'EUR->USD', 'None', 'Запись в отделение',
+                         'лучший курс продажи', 'Логойский'):
+            self.assertNotIn(unwanted, html)
+        self.assertIn('2.948*', html)
+        self.save.assert_awaited_with(expected)
+        self.assertEqual(self.save.await_count, 2)
 
     async def test_provider_connection_failure(self):
         await self.upstream.close()
