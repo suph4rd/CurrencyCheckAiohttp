@@ -37,15 +37,19 @@
                 <div class="col">{{ item.RUB_sell }}</div>
             </div>
 
+            {% if item.EUR_USD_buy is not none %}
             <div class="row mb-2">
                 <div class="col fw-bold">{{ currency_enum.EUR_USD_buy.value }}</div>
                 <div class="col">{{ item.EUR_USD_buy }}</div>
             </div>
+            {% endif %}
 
+            {% if item.EUR_USD_sell is not none %}
             <div class="row">
                 <div class="col fw-bold">{{ currency_enum.EUR_USD_sell.value }}</div>
                 <div class="col">{{ item.EUR_USD_sell }}</div>
             </div>
+            {% endif %}
 
         </div>
     {% endfor %}
