@@ -1,10 +1,3 @@
-"""second  migration
-
-Revision ID: 158f4c6c41c9
-Revises: 
-Create Date: 2022-06-29 00:28:03.750798
-
-"""
 from alembic import op
 import sqlalchemy as sa
 

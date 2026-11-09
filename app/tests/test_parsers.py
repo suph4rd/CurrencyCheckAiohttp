@@ -25,7 +25,8 @@ class MyfinParserTests(unittest.TestCase):
             ('Банк БелВЭБ', ('2.92', '2.965', '3.25', '3.35', '3.46', '3.68')),
             ('СтатусБанк', ('2.948*', '2.948', '3.282', '3.282', '3.4767', '3.625')),
         ):
-            item = dict(zip(('USD_buy', 'USD_sell', 'EUR_buy', 'EUR_sell', 'RUB_buy', 'RUB_sell'), rates))
+            item = {key: value for key, value in zip(
+                ('USD_buy', 'USD_sell', 'EUR_buy', 'EUR_sell', 'RUB_buy', 'RUB_sell'), rates)}
             item.update(name=name, EUR_USD_buy=None, EUR_USD_sell=None)
             expected.append(item)
         self.assertEqual(MyfinParser(html)(), expected)
@@ -52,5 +53,5 @@ class MyfinParserTests(unittest.TestCase):
         for name in ('', '<span></span>', '<span>   </span>', 'Name without span'):
             with self.subTest(name=name):
                 result = MyfinParser(bank_table(name=name))()
-                self.assertEqual(result[0]['name'], 'Безымянный')
+                self.assertEqual(result[0]['name'], '')
                 self.assertEqual(result[0]['USD_buy'], '1')

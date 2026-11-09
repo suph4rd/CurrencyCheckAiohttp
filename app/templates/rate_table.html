@@ -1,0 +1,24 @@
+{% set cross = namespace(available=false) %}
+{% if source == 'myfin' %}{% for item in answer %}{% if item.get('EUR_USD_buy') is not none or item.get('EUR_USD_sell') is not none %}{% set cross.available = true %}{% endif %}{% endfor %}{% endif %}
+<div class="table-scroll" tabindex="0" role="region" aria-label="{{ _('Exchange rate table') }} · {{ source_name }}">
+<table class="rates-table">
+    <caption class="visually-hidden">{{ source_name }} · {{ _('Rates in BYN · Buy and sell from the bank’s perspective') }}</caption>
+    <thead>
+        <tr><th scope="col" rowspan="2" class="bank-column">{{ _('Bank / branch') }}</th><th scope="colgroup" colspan="2">USD</th><th scope="colgroup" colspan="2">EUR</th><th scope="colgroup" colspan="2">100 RUB</th>{% if cross.available %}<th scope="colgroup" colspan="2">EUR/USD</th>{% endif %}</tr>
+        <tr>{% for currency in (['USD', 'EUR', 'RUB', 'EUR_USD'] if cross.available else ['USD', 'EUR', 'RUB']) %}<th scope="col" class="buy-column">{{ _('Buy') }}</th><th scope="col">{{ _('Sell') }}</th>{% endfor %}</tr>
+    </thead>
+    <tbody>
+    {% for item in answer %}
+        {% set bank_name = item.get('name') if source == 'myfin' else item.get('filials_text') %}
+        <tr data-bank-name="{{ bank_name or '' }}"><th scope="row" class="bank-column">{{ bank_name or '—' }}</th>
+        {% for currency in (['USD', 'EUR', 'RUB', 'EUR_USD'] if cross.available else ['USD', 'EUR', 'RUB']) %}
+            {% set buy_key = currency ~ ('_buy' if source == 'myfin' else '_in') %}
+            {% set sell_key = currency ~ ('_sell' if source == 'myfin' else '_out') %}
+            <td class="buy-column">{{ format_rate(item.get(buy_key)) }}</td><td>{{ format_rate(item.get(sell_key)) }}</td>
+        {% endfor %}</tr>
+    {% endfor %}
+    </tbody>
+</table>
+</div>
+{% if not answer %}<p class="empty-state">{{ _('No exchange rates available.') }}</p>{% endif %}
+<div class="table-footer"><span>{{ _('Provider response time') }}: {{ format_rate(elapsed | round(3)) }} {{ _('s') }}</span><span>{{ _('100 RUB = 100 Russian rubles') }}</span></div>

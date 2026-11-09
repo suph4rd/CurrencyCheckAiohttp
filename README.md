@@ -2,7 +2,7 @@
 
 An asynchronous currency exchange rate viewer for Minsk. The application fetches
 JSON from Belarusbank and parses the Myfin currency table, displays rates in a
-Russian-language web interface, and exposes JSON endpoints.
+Russian/English web interface, and exposes JSON endpoints.
 
 Every request to a provider's HTML or JSON endpoint fetches upstream data and
 saves the parsed response to PostgreSQL before returning it. There is no cache
@@ -49,7 +49,7 @@ python -m pip install -r requirements.txt
 python -m pip check
 ```
 
-`requirements.txt` pins runtime dependencies, including transitive dependencies.
+`requirements.txt` pins direct runtime dependencies.
 Installing psycopg2 from source requires a C compiler and PostgreSQL development
 headers, including `pg_config`.
 
@@ -69,6 +69,7 @@ DATABASE_URI_MIGRATION=postgresql+psycopg2://test:1234@localhost:54321/currency_
 Apply migrations and start the application:
 
 ```sh
+pybabel compile -d app/locales
 python -m alembic -c app/db/alembic.ini upgrade head
 bash start.sh
 ```
@@ -139,7 +140,7 @@ When using an external database, update both database URLs.
 
 ## HTTP routes and API
 
-All routes below use `GET`:
+The routes below use `GET` (except the language preference form):
 
 | Route | Response |
 | --- | --- |
@@ -150,6 +151,7 @@ All routes below use `GET`:
 | `/api/myfin-view/` | Myfin rates as JSON, with currency label mappings. |
 | `/api/doc` | Swagger UI. |
 | `/api/doc/swagger.json` | Generated Swagger schema. |
+| `POST /preferences/language` | Save `language=ru` or `language=en` for one year and redirect home. |
 | `/static/` | Bundled styles, JavaScript, and Bootstrap assets. |
 
 For example, with development Compose running:
@@ -178,7 +180,7 @@ Implemented error responses:
 
 API errors return `{"error": {"code": "...", "message": "..."}}` with codes
 `provider_unavailable`, `provider_timeout`, `invalid_provider_response`, or
-`database_save_failed`. HTML errors return Russian text. Unexpected programming
+`database_save_failed`. HTML errors return localized text. Unexpected programming
 errors produce `500` responses. Failed provider responses are never saved.
 
 Each worker creates one pooled HTTP session and its database engine during
@@ -201,14 +203,18 @@ app/
     settings.py      Environment configuration and resource paths
     resources.py     HTTP and database resource lifecycle
     constants.py     Provider URLs, selectors, and timeouts
-    enums.py         Currency keys and display labels
+    enums.py         Currency keys and translatable display labels
+    i18n.py          Gettext catalogs and message marker
     exceptions.py    Shared application error types
   web/               HTTP interface
     routes.py        Route registration
     views.py         HTML handlers
     api.py           JSON handlers and Swagger definitions
-    middleware.py    HTML and API error responses
+    middleware.py    Request language and localized error responses
+    context_processors.py  Template context and client messages
     mixins.py        Shared handler context
+  utils/             Language negotiation and display rate formatting
+  locales/           Russian and English gettext catalogs
   service/           Base orchestration and provider parsers
   db/                Connection factory, models, repository, and Alembic
   templates/         Jinja2 pages and HTML fragments
@@ -222,8 +228,12 @@ docker/              Compose files, scripts, Nginx, and ignored env files
 With dependencies installed, run from the repository root:
 
 ```sh
+pybabel compile -d app/locales
 python -m unittest discover -s app/tests -v
+node app/tests/test_dashboard.cjs
 ```
+
+The client behavior checks require Node.js and no npm packages.
 
 Tests use standard-library unittest and aiohttp test utilities, with no extra
 test dependencies. Normal tests serve fixtures through a local HTTP server and
@@ -243,3 +253,37 @@ python -m unittest discover -s app/tests -v
 
 Offline migration SQL is checked without PostgreSQL. The integration test checks
 repeated `upgrade head` and JSONB/text persistence with PostgreSQL.
+
+## Localization and dashboard
+
+The dashboard has independent provider loading and refresh, local bank-name
+search, and system/light/dark themes. Manual theme preferences are stored in
+localStorage; unavailable browser storage does not prevent use. Language is
+selected from the `language` cookie, then weighted `Accept-Language`, then Russian.
+Regional variants are supported. Provider names, stored values, JSON field names
+remain unchanged. API currency labels, error messages, and missing bank names
+follow the request language; currency mapping keys and raw rate strings stay stable.
+Missing Myfin names are stored as empty strings and displayed as “Unnamed” or
+“Безымянный” in HTTP responses. HTML formats decimal separators without
+rounding rates or losing provider notes. Swagger UI is not localized.
+
+Install dependencies and compile gettext catalogs before running locally:
+
+```sh
+pybabel compile -d app/locales
+```
+
+Docker compiles catalogs during image build. To extract and update messages:
+
+```sh
+pybabel extract -F docker/babel.cfg -o app/locales/messages.pot .
+pybabel update -i app/locales/messages.pot -d app/locales --no-fuzzy-matching
+# Edit app/locales/{ru,en}/LC_MESSAGES/messages.po, then:
+pybabel compile -d app/locales
+python -m unittest discover -s app/tests -v
+```
+
+Client messages originate in the request's Jinja context and are serialized
+using Jinja's `tojson` filter. Translations are request-local; workers never
+switch a process-wide locale. Localized responses include `Content-Language`
+and vary on `Cookie` and `Accept-Language`.

@@ -1,0 +1,222 @@
+# Russian translations for CurrencyCheckAiohttp.
+# Copyright (C) 2026 CurrencyCheckAiohttp contributors
+# This file is distributed under the same license as the
+# CurrencyCheckAiohttp project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: CurrencyCheckAiohttp VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2026-11-09 22:00+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
+"n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+#: app/core/enums.py:8
+msgid "USD Buy"
+msgstr "USD Покупка"
+
+#: app/core/enums.py:9
+msgid "USD Sell"
+msgstr "USD Продажа"
+
+#: app/core/enums.py:10
+msgid "EUR Buy"
+msgstr "EUR Покупка"
+
+#: app/core/enums.py:11
+msgid "EUR Sell"
+msgstr "EUR Продажа"
+
+#: app/core/enums.py:12
+msgid "100RUB Buy"
+msgstr "100RUB Покупка"
+
+#: app/core/enums.py:13
+msgid "100RUB Sell"
+msgstr "100RUB Продажа"
+
+#: app/core/enums.py:14
+msgid "EUR->USD Buy"
+msgstr "EUR->USD Покупка"
+
+#: app/core/enums.py:15
+msgid "EUR->USD Sell"
+msgstr "EUR->USD Продажа"
+
+#: app/core/exceptions.py:6
+msgid "Invalid provider response!"
+msgstr "Ошибка распаковки ответа!"
+
+#: app/core/exceptions.py:16
+msgid "Could not connect to the provider!"
+msgstr "Ошибка подключения к серверу!"
+
+#: app/core/exceptions.py:22
+msgid "The provider request timed out!"
+msgstr "Превышено время ожидания ответа сервера!"
+
+#: app/core/exceptions.py:27
+msgid "Could not save data to the database!"
+msgstr "Ошибка записи объекта в базу данных!"
+
+#: app/templates/main_page.html:11 app/templates/main_page.html:34
+msgid "Exchange rates"
+msgstr "Курсы валют"
+
+#: app/templates/main_page.html:14
+msgid "Skip to exchange rates"
+msgstr "Перейти к курсам валют"
+
+#: app/templates/main_page.html:18
+msgid "Language"
+msgstr "Язык"
+
+#: app/templates/main_page.html:22 app/templates/main_page.html:23
+msgid "Theme"
+msgstr "Тема"
+
+#: app/templates/main_page.html:24
+msgid "System"
+msgstr "Системная"
+
+#: app/templates/main_page.html:25
+msgid "Light"
+msgstr "Светлая"
+
+#: app/templates/main_page.html:26
+msgid "Dark"
+msgstr "Тёмная"
+
+#: app/templates/main_page.html:33
+msgid "CURRENCY MONITOR"
+msgstr "МОНИТОРИНГ ВАЛЮТ"
+
+#: app/templates/main_page.html:35
+msgid "Compare bank exchange rates from independent sources."
+msgstr "Сравнивайте банковские курсы валют из независимых источников."
+
+#: app/templates/main_page.html:36 app/templates/rate_table.html:5
+msgid "Rates in BYN · Buy and sell from the bank’s perspective"
+msgstr "Курсы в BYN · Покупка и продажа со стороны банка"
+
+#: app/templates/main_page.html:40
+msgid "Enable JavaScript to load exchange rates."
+msgstr "Включите JavaScript для загрузки курсов валют."
+
+#: app/templates/belarusbank/belarusbank-main-part.html:1
+#: app/templates/belarusbank/belarusbank.html:1 app/templates/main_page.html:40
+msgid "Belarusbank"
+msgstr "Беларусбанк"
+
+#: app/templates/main_page.html:42
+msgid ""
+"Rates are provided for information. Confirm terms with the bank before "
+"exchanging."
+msgstr "Курсы приведены для справки. Перед обменом уточните условия в банке."
+
+#: app/templates/rate_table.html:3
+msgid "Exchange rate table"
+msgstr "Таблица курсов валют"
+
+#: app/templates/rate_table.html:7
+msgid "Bank / branch"
+msgstr "Банк / отделение"
+
+#: app/templates/rate_table.html:8
+msgid "Buy"
+msgstr "Покупка"
+
+#: app/templates/rate_table.html:8
+msgid "Sell"
+msgstr "Продажа"
+
+#: app/templates/rate_table.html:23
+msgid "No exchange rates available."
+msgstr "Нет доступных курсов валют."
+
+#: app/templates/rate_table.html:24
+msgid "Provider response time"
+msgstr "Время ответа источника"
+
+#: app/templates/rate_table.html:24
+msgid "s"
+msgstr "с"
+
+#: app/templates/rate_table.html:24
+msgid "100 RUB = 100 Russian rubles"
+msgstr "100 RUB = 100 российских рублей"
+
+#: app/templates/source_section.html:7
+msgid "Search banks"
+msgstr "Поиск банков"
+
+#: app/templates/source_section.html:7
+msgid "Search by bank name"
+msgstr "Поиск по названию банка"
+
+#: app/templates/source_section.html:8
+msgid "Refresh"
+msgstr "Обновить"
+
+#: app/templates/source_section.html:10
+msgid "Loading exchange rates…"
+msgstr "Загрузка курсов валют…"
+
+#: app/templates/source_section.html:12
+msgid "No banks match your search."
+msgstr "По вашему запросу банки не найдены."
+
+#: app/templates/belarusbank/belarusbank.html:1
+msgid "Exchange rates at bank branches"
+msgstr "Курсы в отделениях банка"
+
+#: app/templates/myfin/myfin.html:1
+msgid "Exchange rates across banks"
+msgstr "Курсы в разных банках"
+
+#: app/web/context_processors.py:15
+msgid "Loading rates…"
+msgstr "Загрузка курсов…"
+
+#: app/web/context_processors.py:16
+msgid "Updating rates…"
+msgstr "Обновление курсов…"
+
+#: app/web/context_processors.py:17
+msgid "Could not load rates. Please try again."
+msgstr "Не удалось загрузить курсы. Попробуйте ещё раз."
+
+#: app/web/context_processors.py:18
+msgid "Could not update rates. Previously loaded rates are still displayed."
+msgstr "Не удалось обновить курсы. Показаны ранее загруженные данные."
+
+#: app/web/context_processors.py:19
+msgid "Try again"
+msgstr "Повторить"
+
+#: app/web/context_processors.py:20
+#, python-brace-format
+msgid "{visible} of {total} records"
+msgstr "Показано {visible} из {total}"
+
+#: app/web/context_processors.py:21
+msgid "No rates available."
+msgstr "Курсы пока недоступны."
+
+#: app/web/mixins.py:17
+msgid "Unnamed"
+msgstr "Безымянный"
+
+#: app/web/views.py:36
+msgid "Unsupported language."
+msgstr "Неподдерживаемый язык."
+

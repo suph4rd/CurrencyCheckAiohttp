@@ -1,0 +1,13 @@
+<section class="source-panel" data-source="{{ source }}" data-url="/{{ source }}-view/" aria-labelledby="{{ source }}-heading">
+    <div class="source-heading">
+        <div class="source-identity"><span class="source-icon" aria-hidden="true">{{ source_icon }}</span><div><h2 id="{{ source }}-heading">{{ source_name }}</h2><p>{{ source_description }}</p></div></div>
+        <span class="record-count" data-count aria-live="polite">—</span>
+    </div>
+    <div class="source-toolbar">
+        <label class="search-control"><span class="search-icon" aria-hidden="true">⌕</span><span class="visually-hidden">{{ _('Search banks') }} · {{ source_name }}</span><input type="search" data-search placeholder="{{ _('Search by bank name') }}" autocomplete="off"></label>
+        <button class="refresh-button" type="button" data-refresh><span aria-hidden="true">↻</span> {{ _('Refresh') }}</button>
+    </div>
+    <p class="source-status" data-status role="status">{{ _('Loading exchange rates…') }}</p>
+    <div data-content aria-busy="true"><div class="loading-placeholder" aria-hidden="true"><span></span><span></span><span></span></div></div>
+    <p class="empty-state" data-no-results hidden>{{ _('No banks match your search.') }}</p>
+</section>

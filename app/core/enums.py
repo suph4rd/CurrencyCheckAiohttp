@@ -1,16 +1,19 @@
 from enum import Enum
+from collections.abc import Callable
+
+from app.core.i18n import gettext
 
 
 class CurrencyEnum(Enum):
-    USD_buy = "USD Покупка"
-    USD_sell = "USD Продажа"
-    EUR_buy = "EUR Покупка"
-    EUR_sell = "EUR Продажа"
-    RUB_buy = "100RUB Покупка"
-    RUB_sell = "100RUB Продажа"
-    EUR_USD_buy = "EUR->USD Покупка"
-    EUR_USD_sell = "EUR->USD Продажа"
+    USD_buy = gettext("USD Buy")
+    USD_sell = gettext("USD Sell")
+    EUR_buy = gettext("EUR Buy")
+    EUR_sell = gettext("EUR Sell")
+    RUB_buy = gettext("100RUB Buy")
+    RUB_sell = gettext("100RUB Sell")
+    EUR_USD_buy = gettext("EUR->USD Buy")
+    EUR_USD_sell = gettext("EUR->USD Sell")
 
     @classmethod
-    def get_dict(cls) -> dict[str, str]:
-        return {item.name: item.value for item in cls}
+    def get_dict(cls, translator: Callable[[str], str]) -> dict[str, str]:
+        return {item.name: translator(item.value) for item in cls}

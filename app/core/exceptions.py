@@ -1,6 +1,9 @@
+from app.core.i18n import gettext
+
+
 class RateServiceError(Exception):
     code = "invalid_provider_response"
-    message = "Ошибка распаковки ответа!"
+    message = gettext("Invalid provider response!")
     status = 400
 
 
@@ -10,15 +13,15 @@ class InvalidProviderResponse(RateServiceError):
 
 class ProviderUnavailable(RateServiceError):
     code = "provider_unavailable"
-    message = "Ошибка подключения к серверу!"
+    message = gettext("Could not connect to the provider!")
     status = 417
 
 
 class ProviderTimeout(ProviderUnavailable):
     code = "provider_timeout"
-    message = "Превышено время ожидания ответа сервера!"
+    message = gettext("The provider request timed out!")
 
 
 class DatabaseSaveError(RateServiceError):
     code = "database_save_failed"
-    message = "Ошибка записи объекта в базу данных!"
+    message = gettext("Could not save data to the database!")

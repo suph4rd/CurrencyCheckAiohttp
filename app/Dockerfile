@@ -16,6 +16,7 @@ COPY requirements.txt ./
 RUN python -m pip install --no-cache-dir -r requirements.txt
 
 COPY . .
+RUN pybabel compile -d app/locales
 
 EXPOSE 7777
 

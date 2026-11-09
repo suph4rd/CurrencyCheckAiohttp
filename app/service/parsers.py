@@ -37,4 +37,4 @@ class MyfinParser:
 
     def _get_bank_name(self, cell: Tag) -> str:
         name = cell.find("span", recursive=False)
-        return (name.get_text(" ", strip=True) if name else "") or "Безымянный"
+        return name.get_text(" ", strip=True) if name else ""

@@ -14,6 +14,7 @@ from aiohttp.test_utils import TestClient, TestServer
 
 from app import service
 from app.core.enums import CurrencyEnum
+from app.core.i18n import translations
 from app.core.exceptions import DatabaseSaveError
 from app.db.repository import ResponseRepository
 from app.core.resources import HTTP_SESSION
@@ -89,6 +90,37 @@ class ApplicationTests(unittest.IsolatedAsyncioTestCase):
         response = await self.client.get('/api/doc/swagger_static/css/screen.css')
         self.assertEqual(response.status, 200)
 
+    async def test_currency_labels_are_request_local(self):
+        async def check(locale):
+            response = await self.client.get('/api/myfin-view/',
+                                             headers={'Accept-Language': locale})
+            self.assertEqual(response.status, 200)
+            payload = await response.json()
+            expected = {}
+            for key, currency in (('USD', 'USD'), ('EUR', 'EUR'),
+                                  ('RUB', '100RUB'), ('EUR_USD', 'EUR->USD')):
+                for side, english, russian in (('buy', 'Buy', 'Покупка'),
+                                               ('sell', 'Sell', 'Продажа')):
+                    expected[f'{key}_{side}'] = f'{currency} {russian if locale == "ru" else english}'
+            self.assertEqual(payload['currency_enum'], expected)
+            self.assertEqual(payload['myfin_answer'][0]['USD_buy'], '0.25')
+            self.assertEqual(response.headers['Content-Language'], locale)
+        await asyncio.gather(*(check(locale) for locale in ['ru', 'en'] * 5))
+
+    async def test_missing_bank_name_is_localized_only_for_response(self):
+        self.body = MYFIN_HTML.replace('<span>Test Bank</span>', '<span></span>')
+        for locale, name in (('ru', 'Безымянный'), ('en', 'Unnamed')):
+            for path in ('/api/myfin-view/', '/myfin-view/'):
+                with self.subTest(locale=locale, path=path):
+                    response = await self.client.get(path, headers={'Accept-Language': locale})
+                    self.assertEqual(response.status, 200)
+                    if path.startswith('/api/'):
+                        payload = await response.json()
+                        self.assertEqual(payload['myfin_answer'][0]['name'], name)
+                    else:
+                        self.assertIn(name, await response.text())
+                    self.assertEqual(self.save.await_args.args[0][0]['name'], '')
+
     async def test_fragments_and_api(self):
         for provider in ('myfin', 'belarusbank'):
             with self.subTest(provider=provider):
@@ -100,7 +132,7 @@ class ApplicationTests(unittest.IsolatedAsyncioTestCase):
                 data = await response.json()
                 self.assertIsInstance(data[f'{provider}_time'], float)
                 if provider == 'myfin':
-                    self.assertEqual(data['currency_enum'], CurrencyEnum.get_dict())
+                    self.assertEqual(data['currency_enum'], CurrencyEnum.get_dict(translations("ru").gettext))
                     self.assertEqual(data['myfin_answer'][0]['RUB_sell'], '5.25')
                     self.assertIsNone(data['myfin_answer'][0]['EUR_USD_buy'])
                     self.assertIsNone(data['myfin_answer'][0]['EUR_USD_sell'])
@@ -130,7 +162,8 @@ class ApplicationTests(unittest.IsolatedAsyncioTestCase):
             ('Банк БелВЭБ', ('2.92', '2.965', '3.25', '3.35', '3.46', '3.68')),
             ('СтатусБанк', ('2.948*', '2.948', '3.282', '3.282', '3.4767', '3.625')),
         ):
-            item = dict(zip(('USD_buy', 'USD_sell', 'EUR_buy', 'EUR_sell', 'RUB_buy', 'RUB_sell'), rates))
+            item = {key: value for key, value in zip(
+                ('USD_buy', 'USD_sell', 'EUR_buy', 'EUR_sell', 'RUB_buy', 'RUB_sell'), rates)}
             item.update(name=name, EUR_USD_buy=None, EUR_USD_sell=None)
             expected.append(item)
         response = await self.client.get('/api/myfin-view/')
@@ -144,11 +177,12 @@ class ApplicationTests(unittest.IsolatedAsyncioTestCase):
         html = await response.text()
         for item in expected:
             self.assertIn(item['name'], html)
-        self.assertEqual(html.count('Название банка:'), 3)
+        self.assertEqual(html.count('data-bank-name='), 3)
+        self.assertIn('scope="colgroup"', html)
         for unwanted in ('EUR-&gt;USD', 'EUR->USD', 'None', 'Запись в отделение',
                          'лучший курс продажи', 'Логойский'):
             self.assertNotIn(unwanted, html)
-        self.assertIn('2.948*', html)
+        self.assertIn('2,948*', html)
         self.save.assert_awaited_with(expected, "myfin")
         self.assertEqual(self.save.await_count, 2)
 
@@ -175,7 +209,7 @@ class ApplicationTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(response.status, 200)
                     html = await response.text()
                     if path == '/myfin-view/':
-                        for label in ('USD Покупка', 'EUR Продажа', '100RUB Покупка'):
+                        for label in ('USD', 'EUR', '100 RUB', 'Покупка', 'Продажа'):
                             self.assertIn(label, html)
             finally:
                 os.chdir(previous)

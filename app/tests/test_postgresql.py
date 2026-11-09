@@ -16,8 +16,8 @@ class OfflineMigrationTests(unittest.TestCase):
         import sys
         import tempfile
         root = Path(__file__).resolve().parents[2]
-        env = dict(os.environ, DATABASE_URI='postgresql+asyncpg://test:test@localhost/test',
-                   DATABASE_URI_MIGRATION='postgresql+psycopg2://test:test@localhost/test')
+        env = {**os.environ, 'DATABASE_URI': 'postgresql+asyncpg://test:test@localhost/test',
+               'DATABASE_URI_MIGRATION': 'postgresql+psycopg2://test:test@localhost/test'}
         with tempfile.TemporaryDirectory() as directory:
             result = subprocess.run(
                 [sys.executable, '-m', 'alembic', '-c', str(root / 'app/db/alembic.ini'),
@@ -32,8 +32,8 @@ class OfflineMigrationTests(unittest.TestCase):
                      'Set TEST_DATABASE_URI and TEST_DATABASE_URI_MIGRATION for a disposable database')
 class PostgreSQLTests(unittest.TestCase):
     def test_migrations_and_persistence(self):
-        env = dict(os.environ, DATABASE_URI=os.environ['TEST_DATABASE_URI'],
-                   DATABASE_URI_MIGRATION=os.environ['TEST_DATABASE_URI_MIGRATION'])
+        env = {**os.environ, 'DATABASE_URI': os.environ['TEST_DATABASE_URI'],
+               'DATABASE_URI_MIGRATION': os.environ['TEST_DATABASE_URI_MIGRATION']}
         app_dir = Path(__file__).resolve().parents[2]
         import sys
         command = [sys.executable, '-m', 'alembic', '-c', 'app/db/alembic.ini', 'upgrade', 'head']

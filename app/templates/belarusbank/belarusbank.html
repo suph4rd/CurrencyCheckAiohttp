@@ -1,26 +1,3 @@
-<div style="border: 1px solid black;
-    border-radius: 0.25rem; margin: 1em">
-    <h1 style="text-align: center">БеларусьБанк</h1>
-    <div class="main-part-belarusbank">
-        <p style="text-align: center">Загрузка, пожалуйста подождите!</p>
-        <div class="d-flex justify-content-center">
-          <div class="spinner-border" role="status">
-            <span class="visually-hidden">Loading...</span>
-          </div>
-        </div>
-    </div>
-</div>
-
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
-        console.log("belarusnank-start-load")
-        let elemForReplace = document.querySelector(".main-part-belarusbank")
-        axios.get("belarusbank-view/")
-            .then(function (response) {
-                elemForReplace.innerHTML = response.data
-            }).catch(function (err) {
-                console.log(err);
-                 elemForReplace.innerHTML = `<h4 style='text-align: center'>${ err.response.data ? err.response.data :"Ошибка загрузки данных!"}</h4>`
-        });
-    })
-</script>
+{% with source='belarusbank', source_icon='Б', source_name=_('Belarusbank'), source_description=_('Exchange rates at bank branches') %}
+    {% include 'source_section.html' %}
+{% endwith %}
