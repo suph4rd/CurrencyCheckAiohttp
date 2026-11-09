@@ -1,6 +1,8 @@
+import asyncio
 import logging
 import os
 import unittest
+import tempfile
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -11,8 +13,11 @@ from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
 from app import service
-from app.enums import CurrencyEnum
-from app.exceptions import DatabaseSaveError
+from app.core.enums import CurrencyEnum
+from app.core.exceptions import DatabaseSaveError
+from app.db.repository import ResponseRepository
+from app.core.resources import HTTP_SESSION
+from sqlalchemy.exc import SQLAlchemyError
 from app.server import start
 
 logging.getLogger().setLevel(logging.CRITICAL)
@@ -30,11 +35,17 @@ class ApplicationTests(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
         self.body = MYFIN_HTML
         self.bad_json = False
+        self.upstream_status = 200
+        self.delay = 0
 
         async def myfin(request):
-            return web.Response(text=self.body, content_type='text/html')
+            await asyncio.sleep(self.delay)
+            return web.Response(text=self.body, content_type='text/html', status=self.upstream_status)
 
         async def belarusbank(request):
+            await asyncio.sleep(self.delay)
+            if self.upstream_status != 200:
+                return web.Response(status=self.upstream_status)
             if self.bad_json:
                 return web.Response(text='{broken', content_type='application/json')
             return web.json_response(BANK_JSON)
@@ -45,13 +56,13 @@ class ApplicationTests(unittest.IsolatedAsyncioTestCase):
         self.upstream = TestServer(upstream)
         await self.upstream.start_server()
         self.patches = [
-            patch.object(service.MyfinHandleClass, 'url', str(self.upstream.make_url('/myfin'))),
-            patch.object(service.BelarusbankHandleClass, 'url', str(self.upstream.make_url('/belarusbank'))),
-            patch.object(service.AbstractHandleClass, '_save_answer', new_callable=AsyncMock),
+            patch.object(service.MyfinService, 'url', str(self.upstream.make_url('/myfin'))),
+            patch.object(service.BelarusbankService, 'url', str(self.upstream.make_url('/belarusbank'))),
+            patch.object(ResponseRepository, 'save', new_callable=AsyncMock),
         ]
         for item in self.patches:
             item.start()
-        self.save = service.AbstractHandleClass._save_answer
+        self.save = ResponseRepository.save
         self.client = TestClient(TestServer(start()))
         await self.client.start_server()
 
@@ -126,7 +137,7 @@ class ApplicationTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(response.status, 200)
         data = await response.json()
         self.assertEqual(data['myfin_answer'], expected)
-        self.save.assert_awaited_once_with(expected)
+        self.save.assert_awaited_once_with(expected, "myfin")
 
         response = await self.client.get('/myfin-view/')
         self.assertEqual(response.status, 200)
@@ -138,7 +149,7 @@ class ApplicationTests(unittest.IsolatedAsyncioTestCase):
                          'лучший курс продажи', 'Логойский'):
             self.assertNotIn(unwanted, html)
         self.assertIn('2.948*', html)
-        self.save.assert_awaited_with(expected)
+        self.save.assert_awaited_with(expected, "myfin")
         self.assertEqual(self.save.await_count, 2)
 
     async def test_provider_connection_failure(self):
@@ -154,6 +165,85 @@ class ApplicationTests(unittest.IsolatedAsyncioTestCase):
             response = await self.client.get(f'/api/{provider}-view/')
             self.assertEqual(response.status, 400)
 
+    async def test_templates_from_another_working_directory(self):
+        previous = Path.cwd()
+        with tempfile.TemporaryDirectory() as directory:
+            try:
+                os.chdir(directory)
+                for path in ('/', '/myfin-view/', '/belarusbank-view/'):
+                    response = await self.client.get(path)
+                    self.assertEqual(response.status, 200)
+                    html = await response.text()
+                    if path == '/myfin-view/':
+                        for label in ('USD Покупка', 'EUR Продажа', '100RUB Покупка'):
+                            self.assertIn(label, html)
+            finally:
+                os.chdir(previous)
+
+    async def test_http_failure_and_error_contract(self):
+        self.upstream_status = 503
+        for provider in ('myfin', 'belarusbank'):
+            for api in (False, True):
+                response = await self.client.get(f"{'/api' if api else ''}/{provider}-view/")
+                self.assertEqual(response.status, 417)
+                if api:
+                    self.assertEqual(await response.json(), {'error': {
+                        'code': 'provider_unavailable', 'message': 'Ошибка подключения к серверу!'}})
+                else:
+                    self.assertEqual(await response.text(), 'Ошибка подключения к серверу!')
+        self.save.assert_not_awaited()
+
+    async def test_timeout(self):
+        self.delay = 0.05
+        with patch('app.core.resources.HTTP_TOTAL_TIMEOUT', 0.01):
+            client = TestClient(TestServer(start()))
+            async with client:
+                for provider in ('myfin', 'belarusbank'):
+                    response = await client.get(f'/api/{provider}-view/')
+                    self.assertEqual(response.status, 417)
+                    self.assertEqual((await response.json())['error']['code'], 'provider_timeout')
+        self.save.assert_not_awaited()
+
+    async def test_session_reuse_and_cleanup(self):
+        from app.core import resources
+        from app.core.resources import REPOSITORY
+        from aiohttp import ClientSession
+        engine = MagicMock()
+        engine.dispose = AsyncMock()
+        with patch.object(resources, 'create_database', return_value=(engine, MagicMock())):
+            client = TestClient(TestServer(start()))
+            await client.start_server()
+            session = client.app[HTTP_SESSION]
+            repository = client.app[REPOSITORY]
+            self.assertIsInstance(session, ClientSession)
+            self.assertEqual(session.timeout.total, 15)
+            self.assertEqual(session.timeout.connect, 5)
+            self.assertFalse(session._retry_connection)
+            for provider in ('myfin', 'belarusbank'):
+                response = await client.get(f'/api/{provider}-view/')
+                self.assertEqual(response.status, 200)
+                self.assertIs(client.app[HTTP_SESSION], session)
+                self.assertIs(client.app[REPOSITORY], repository)
+            await client.close()
+            self.assertTrue(session.closed)
+            engine.dispose.assert_awaited_once()
+
+    async def test_timing_includes_save(self):
+        async def save(*args):
+            await asyncio.sleep(0.02)
+        self.save.side_effect = save
+        response = await self.client.get('/api/myfin-view/')
+        self.assertGreaterEqual((await response.json())['myfin_time'], 0.02)
+
+    async def test_error_codes(self):
+        self.body = 'broken'
+        response = await self.client.get('/api/myfin-view/')
+        self.assertEqual((await response.json())['error']['code'], 'invalid_provider_response')
+        self.body = MYFIN_HTML
+        self.save.side_effect = DatabaseSaveError
+        response = await self.client.get('/api/myfin-view/')
+        self.assertEqual((await response.json())['error']['code'], 'database_save_failed')
+
 
 class PersistenceTests(unittest.IsolatedAsyncioTestCase):
     async def test_json_and_text_and_commit_failure(self):
@@ -162,16 +252,19 @@ class PersistenceTests(unittest.IsolatedAsyncioTestCase):
         context = MagicMock()
         context.__aenter__ = AsyncMock(return_value=session)
         context.__aexit__ = AsyncMock(return_value=False)
-        with patch.object(service, 'async_session', return_value=context):
-            handler = service.BelarusbankHandleClass()
-            for answer in (BANK_JSON, {'value': 'тест'}, 'text response'):
-                await handler._save_answer(answer)
-                obj = session.add.call_args.args[0]
-                self.assertEqual(obj.type_service, 'belarusbank')
-                self.assertEqual(obj.text_answer if isinstance(answer, str) else obj.answer_json, answer)
-            session.commit.side_effect = RuntimeError('database unavailable')
-            with self.assertRaises(DatabaseSaveError):
-                await handler._save_answer(BANK_JSON)
+        repository = ResponseRepository(MagicMock(return_value=context))
+        for answer in (BANK_JSON, {'value': 'тест'}, 'text response'):
+            await repository.save(answer, 'belarusbank')
+            obj = session.add.call_args.args[0]
+            self.assertEqual(obj.type_service, 'belarusbank')
+            self.assertEqual(obj.text_answer if isinstance(answer, str) else obj.answer_json, answer)
+        self.assertEqual(session.commit.await_count, 3)
+        session.commit.side_effect = SQLAlchemyError('database unavailable')
+        with self.assertRaises(DatabaseSaveError) as raised:
+            await repository.save(BANK_JSON, 'belarusbank')
+        self.assertIsInstance(raised.exception.__cause__, SQLAlchemyError)
 
-    def test_generator_exhaustion(self):
-        self.assertEqual(list(service.MyfinHandleClass.get_generator([1, 2])), [1, 2])
+    async def test_programming_error_is_not_converted(self):
+        repository = ResponseRepository(MagicMock(side_effect=RuntimeError('bug')))
+        with self.assertRaises(RuntimeError):
+            await repository.save(BANK_JSON, 'belarusbank')

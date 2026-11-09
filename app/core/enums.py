@@ -1,13 +1,7 @@
 from enum import Enum
 
 
-class EnumMixin:
-    @staticmethod
-    def get_dict() -> dict:
-        return {item.name: item.value for item in CurrencyEnum.__members__.values()}
-
-
-class CurrencyEnum(EnumMixin, Enum):
+class CurrencyEnum(Enum):
     USD_buy = "USD Покупка"
     USD_sell = "USD Продажа"
     EUR_buy = "EUR Покупка"
@@ -16,3 +10,7 @@ class CurrencyEnum(EnumMixin, Enum):
     RUB_sell = "100RUB Продажа"
     EUR_USD_buy = "EUR->USD Покупка"
     EUR_USD_sell = "EUR->USD Продажа"
+
+    @classmethod
+    def get_dict(cls) -> dict[str, str]:
+        return {item.name: item.value for item in cls}

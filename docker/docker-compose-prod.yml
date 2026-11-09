@@ -1,14 +1,14 @@
+name: currencycheckaiohttp
+
 services:
   project:
     build:
-      context: .
-      dockerfile: ./build/Dockerfile
+      context: ..
+      dockerfile: app/Dockerfile
     env_file:
-      - docker_settings.env
+      - env/docker_settings.env
     command: > 
-      sh -c "cd ./app && 
-             alembic upgrade head &&
-             cd .. &&
+      sh -c "alembic -c app/db/alembic.ini upgrade head &&
              exec gunicorn app.server:current_app --bind 0.0.0.0:7777 --worker-class aiohttp.GunicornWebWorker --workers 4"
     depends_on:
       db:
@@ -17,7 +17,7 @@ services:
   db:
     image: postgres:14.1-alpine
     env_file:
-      - docker_settings.env
+      - env/docker_settings.env
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
       interval: 5s
@@ -31,8 +31,8 @@ services:
 
   nginx:
     build:
-      context: .
-      dockerfile: ./nginx/Dockerfile
+      context: ..
+      dockerfile: docker/nginx/Dockerfile
     ports:
       - "99:80"
     depends_on:

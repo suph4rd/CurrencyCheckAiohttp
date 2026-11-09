@@ -3,12 +3,29 @@ import os
 from pathlib import Path
 import subprocess
 import unittest
-from unittest.mock import patch
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-from app import models, service
+from app.db import models
+from app.db.repository import ResponseRepository
+
+
+class OfflineMigrationTests(unittest.TestCase):
+    def test_offline_sql_from_another_working_directory(self):
+        import sys
+        import tempfile
+        root = Path(__file__).resolve().parents[2]
+        env = dict(os.environ, DATABASE_URI='postgresql+asyncpg://test:test@localhost/test',
+                   DATABASE_URI_MIGRATION='postgresql+psycopg2://test:test@localhost/test')
+        with tempfile.TemporaryDirectory() as directory:
+            result = subprocess.run(
+                [sys.executable, '-m', 'alembic', '-c', str(root / 'app/db/alembic.ini'),
+                 'upgrade', 'head', '--sql'], cwd=directory, env=env,
+                check=True, capture_output=True, text=True)
+        self.assertIn('CREATE TABLE response', result.stdout)
+        self.assertIn('JSONB', result.stdout)
+        self.assertIn('158f4c6c41c9', result.stdout)
 
 
 @unittest.skipUnless(os.getenv('TEST_DATABASE_URI') and os.getenv('TEST_DATABASE_URI_MIGRATION'),
@@ -17,9 +34,9 @@ class PostgreSQLTests(unittest.TestCase):
     def test_migrations_and_persistence(self):
         env = dict(os.environ, DATABASE_URI=os.environ['TEST_DATABASE_URI'],
                    DATABASE_URI_MIGRATION=os.environ['TEST_DATABASE_URI_MIGRATION'])
-        app_dir = Path(__file__).resolve().parents[1] / 'app'
+        app_dir = Path(__file__).resolve().parents[2]
         import sys
-        command = [sys.executable, '-m', 'alembic', 'upgrade', 'head']
+        command = [sys.executable, '-m', 'alembic', '-c', 'app/db/alembic.ini', 'upgrade', 'head']
         offline = subprocess.run(command + ['--sql'], cwd=app_dir, env=env,
                                  check=True, capture_output=True, text=True)
         self.assertIn('CREATE TABLE response', offline.stdout)
@@ -33,10 +50,9 @@ class PostgreSQLTests(unittest.TestCase):
         factory = async_sessionmaker(engine, expire_on_commit=False)
         payload = [{'currency': 'USD', 'name': 'Банк', 'rate': '3.25'}]
         try:
-            with patch.object(service, 'async_session', factory):
-                handler = service.BelarusbankHandleClass()
-                await handler._save_answer(payload)
-                await handler._save_answer('Текст ответа')
+            repository = ResponseRepository(factory)
+            await repository.save(payload, 'belarusbank')
+            await repository.save('Текст ответа', 'belarusbank')
             async with factory() as session:
                 rows = (await session.scalars(select(models.Response).order_by(models.Response.id.desc()).limit(2))).all()
                 self.assertEqual(rows[0].text_answer, 'Текст ответа')

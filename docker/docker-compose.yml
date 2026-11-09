@@ -1,8 +1,10 @@
+name: currencycheckaiohttp
+
 services:
   project_dev:
     build:
-      context: .
-      dockerfile: ./build/Dockerfile
+      context: ..
+      dockerfile: app/Dockerfile
     environment:
       APP_HOST: "0.0.0.0"
       APP_PORT: "7777"
@@ -10,9 +12,7 @@ services:
       DATABASE_URI_MIGRATION: "postgresql+psycopg2://test:1234@db_dev:5432/currency_db"
 
     command: > 
-      sh -c "cd ./app && 
-             alembic upgrade head &&
-             cd .. &&
+      sh -c "alembic -c app/db/alembic.ini upgrade head &&
              exec gunicorn app.server:current_app --bind 0.0.0.0:7777 --worker-class aiohttp.GunicornWebWorker --workers 4"
     ports:
       - '7777:7777'

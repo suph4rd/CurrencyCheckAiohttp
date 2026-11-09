@@ -8,10 +8,10 @@ from alembic import context
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
-sys.path = ['', '..'] + sys.path[1:]
 
-from app import settings
-from app.models import Base
+
+from app.core import settings
+from app.db.models import Base
 
 config = context.config
 

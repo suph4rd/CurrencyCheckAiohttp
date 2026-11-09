@@ -8,12 +8,14 @@ Communicate with the user in Russian, including replies, explanations, and progr
 
 This Python 3.15.2 application collects currency exchange rates from Belarusbank and Myfin, serves HTML and JSON through aiohttp, and stores responses in PostgreSQL.
 
-- `app/server.py` initializes the application; `routes.py` maps URLs and `views.py` implements HTTP handlers.
-- `app/service.py` fetches, parses, and persists provider responses.
-- `app/database.py` and `models.py` define asynchronous SQLAlchemy access and database models.
-- `app/migrations/` contains Alembic migrations; `app/alembic.ini` configures them.
+- `app/server.py` initializes the application and preserves the `app.server:current_app` entry point.
+- `app/web/` contains routes, HTML and JSON handlers, error middleware, and HTTP mixins.
+- `app/core/` contains settings, application resource lifecycle, constants, enums, and shared exceptions.
+- `app/service/` fetches, parses, and persists provider responses.
+- `app/db/connection.py` and `app/db/models.py` define asynchronous SQLAlchemy access and database models.
+- `app/db/migrations/` contains Alembic migrations; `app/db/alembic.ini` configures them.
 - `app/templates/` contains Jinja2 templates; `app/static/` contains CSS, JavaScript, and bundled Bootstrap assets.
-- `build/`, `nginx/`, and the Compose files define container deployment. Tests are in `tests/`.
+- `docker/` and `app/Dockerfile` define container deployment. Tests are in `app/tests/`.
 
 ## Build, Test, and Development Commands
 
@@ -21,18 +23,18 @@ Run commands from the repository root unless stated otherwise.
 
 - `python3.15 -m venv .venv` and `source .venv/bin/activate`: create and activate a local environment.
 - `pip install -r requirements.txt`: install pinned dependencies.
-- `docker compose up --build`: build and run the development application and PostgreSQL; access the application at `http://localhost:7777`.
-- `cd app && alembic upgrade head`: apply migrations with database environment variables configured.
+- `docker compose -f docker/docker-compose.yml up --build`: build and run the development application and PostgreSQL; access the application at `http://localhost:7777`.
+- `alembic -c app/db/alembic.ini upgrade head`: apply migrations with database environment variables configured.
 - `bash start.sh`: run Gunicorn locally on port 8000 after configuring the database and applying migrations.
-- `docker compose -f docker-compose-prod.yml up -d --build`: start production services using `docker_settings.env`.
+- `docker compose -f docker/docker-compose-prod.yml up -d --build`: start production services using `docker/env/docker_settings.env`.
 
 ## Coding Style & Naming Conventions
 
-Use four-space indentation, snake_case for functions and variables, PascalCase for classes, and UPPER_SNAKE_CASE for constants. Follow existing type annotations and asynchronous request/database patterns. Keep provider parsing in service classes and HTTP behavior in views. No formatter or linter is currently configured.
+Use four-space indentation, snake_case for functions and variables, PascalCase for classes, and UPPER_SNAKE_CASE for constants. Follow existing type annotations and asynchronous request/database patterns. Keep provider parsing in dedicated parsers, orchestration in service classes, and HTTP behavior in views. No formatter or linter is currently configured.
 
 ## Testing Guidelines
 
-Tests use standard-library `unittest` and aiohttp test utilities. Run `python -m unittest discover -s tests -v`. No coverage threshold is configured. Verify changes against the relevant HTML and `/api/` routes, including provider failures and database persistence. For new automated tests, use a `tests/` directory with `test_*.py` filenames; document dependencies and the execution command. Mock upstream responses for repeatable parser tests.
+Tests use standard-library `unittest` and aiohttp test utilities. Run `python -m unittest discover -s app/tests -v`. No coverage threshold is configured. Verify changes against the relevant HTML and `/api/` routes, including provider failures and database persistence. For new automated tests, use a `app/tests/` directory with `test_*.py` filenames; document dependencies and the execution command. Mock upstream responses for repeatable parser tests.
 
 ## Commit & Pull Request Guidelines
 
@@ -40,4 +42,4 @@ History uses short imperative subjects with `feat:` and `fix:` prefixes. Follow 
 
 ## Security & Configuration
 
-Keep credentials in ignored `local_settings.env` or `docker_settings.env` files. Configure `DATABASE_URI` with asyncpg and `DATABASE_URI_MIGRATION` with psycopg2. Never commit production credentials; development Compose credentials are local examples.
+Keep credentials in ignored `docker/env/local_settings.env` or `docker/env/docker_settings.env` files. Configure `DATABASE_URI` with asyncpg and `DATABASE_URI_MIGRATION` with psycopg2. Never commit production credentials; development Compose credentials are local examples.

@@ -1,6 +1,6 @@
 from sqlalchemy.dialects.postgresql import JSONB, TEXT
 
-from app.database import Base
+from app.db.connection import Base
 import sqlalchemy as sa
 
 
