@@ -2,13 +2,13 @@
 
 An asynchronous currency exchange rate viewer for Minsk. The application fetches
 JSON from Belarusbank and parses the Myfin currency table, displays rates in a
-Russian-language web interface, and exposes JSON endpoints.
+Russian/English web interface, and exposes JSON endpoints.
 
 Every request to a provider's HTML or JSON endpoint fetches upstream data and
 saves the parsed response to PostgreSQL before returning it. There is no cache
 or background polling; a working database is required to retrieve rates.
 
-The stack uses Python **3.15.2** (specified in `build/Dockerfile`), aiohttp,
+The stack uses Python **3.15.2** (specified in `app/Dockerfile`), aiohttp,
 Jinja2, Beautiful Soup, asynchronous SQLAlchemy with asyncpg, Alembic with
 psycopg2, and Gunicorn. Compose uses PostgreSQL 14.1; the production stack
 adds Nginx.
@@ -19,7 +19,7 @@ Run commands from the repository root. Install Docker with Compose support.
 The development stack requires no environment file:
 
 ```sh
-docker compose up --build
+docker compose -f docker/docker-compose.yml up --build
 ```
 
 Open <http://localhost:7777>. Compose waits for PostgreSQL to become healthy,
@@ -30,7 +30,7 @@ password `1234`.
 Stop the stack with Ctrl+C. To remove its containers and network:
 
 ```sh
-docker compose down
+docker compose -f docker/docker-compose.yml down
 ```
 
 The development database has no explicitly configured persistent volume.
@@ -49,17 +49,17 @@ python -m pip install -r requirements.txt
 python -m pip check
 ```
 
-`requirements.txt` pins runtime dependencies, including transitive dependencies.
+`requirements.txt` pins direct runtime dependencies.
 Installing psycopg2 from source requires a C compiler and PostgreSQL development
 headers, including `pg_config`.
 
 Start only the development database in a separate terminal:
 
 ```sh
-bash db_run.sh
+bash docker/db_run.sh
 ```
 
-Create an ignored `local_settings.env` in the repository root:
+Create an ignored `docker/env/local_settings.env` in `docker/env/`:
 
 ```dotenv
 DATABASE_URI=postgresql+asyncpg://test:1234@localhost:54321/currency_db
@@ -69,9 +69,8 @@ DATABASE_URI_MIGRATION=postgresql+psycopg2://test:1234@localhost:54321/currency_
 Apply migrations and start the application:
 
 ```sh
-cd app
-python -m alembic upgrade head
-cd ..
+pybabel compile -d app/locales
+python -m alembic -c app/db/alembic.ini upgrade head
 bash start.sh
 ```
 
@@ -85,33 +84,34 @@ It does not apply migrations.
 Prepare configuration and start PostgreSQL, the application, and Nginx:
 
 ```sh
-bash deploy.sh
+bash docker/deploy.sh
 ```
 
-Open <http://localhost:99>. On first use, `setup_env.sh` creates an ignored
-`docker_settings.env` with a random PostgreSQL password and matching database
+Open <http://localhost:99>. On first use, `docker/setup_env.sh` creates an ignored
+`docker/env/docker_settings.env` with a random PostgreSQL password and matching database
 URLs. It requires Bash and OpenSSL and preserves existing configuration.
-`deploy.sh` builds and starts services, then restarts Nginx to resolve the
+`docker/deploy.sh` builds and starts services, then restarts Nginx to resolve the
 application container's current IP address.
 
 For direct Compose usage:
 
 ```sh
-bash setup_env.sh
-docker compose -f docker-compose-prod.yml up -d --build
-docker compose -f docker-compose-prod.yml restart nginx
+bash docker/setup_env.sh
+docker compose -f docker/docker-compose-prod.yml up -d --build
+docker compose -f docker/docker-compose-prod.yml restart nginx
 ```
 
 Migrations run automatically before Gunicorn starts. PostgreSQL data is stored
-in the named `db` volume. Keep `docker_settings.env`: regenerating credentials
+in the named `db` volume (`currencycheckaiohttp_db`). Both Compose files
+explicitly retain the original project name `currencycheckaiohttp`. Keep `docker/env/docker_settings.env`: regenerating credentials
 does not change the password of an already initialized database volume.
 
 Useful management commands:
 
 ```sh
-docker compose -f docker-compose-prod.yml ps
-docker compose -f docker-compose-prod.yml logs -f project
-docker compose -f docker-compose-prod.yml down
+docker compose -f docker/docker-compose-prod.yml ps
+docker compose -f docker/docker-compose-prod.yml logs -f project
+docker compose -f docker/docker-compose-prod.yml down
 ```
 
 `down` preserves the named database volume. Nginx serves `/static/` directly
@@ -121,16 +121,16 @@ restrictions for your deployment environment.
 
 ## Configuration
 
-`app/settings.py` loads `local_settings.env` by default, or `docker_settings.env`
+`app/core/settings.py` loads `docker/env/local_settings.env` by default, or `docker/env/docker_settings.env`
 when `IS_DOCKER` has a nonempty value. Existing process environment variables
-take precedence. Production Compose injects `docker_settings.env` through
+take precedence. Production Compose injects `docker/env/docker_settings.env` through
 `env_file`; development Compose supplies database URLs directly.
 
 | Variable | Purpose |
 | --- | --- |
 | `DATABASE_URI` | Required SQLAlchemy URL using `postgresql+asyncpg` for the application. |
 | `DATABASE_URI_MIGRATION` | SQLAlchemy URL using `postgresql+psycopg2`, required for Alembic. |
-| `IS_DOCKER` | Selects `docker_settings.env` when set to a nonempty value. |
+| `IS_DOCKER` | Selects `docker/env/docker_settings.env` when set to a nonempty value. |
 | `APP_PORT` | Used by `python -m app.server`; defaults to `8001`. Gunicorn scripts and Compose set bind ports explicitly. |
 | `APP_HOST` | Loaded by settings but currently not used to bind the server. |
 | `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` | Initialize production Compose PostgreSQL; must match the database URLs. |
@@ -140,7 +140,7 @@ When using an external database, update both database URLs.
 
 ## HTTP routes and API
 
-All routes below use `GET`:
+The routes below use `GET` (except the language preference form):
 
 | Route | Response |
 | --- | --- |
@@ -151,6 +151,7 @@ All routes below use `GET`:
 | `/api/myfin-view/` | Myfin rates as JSON, with currency label mappings. |
 | `/api/doc` | Swagger UI. |
 | `/api/doc/swagger.json` | Generated Swagger schema. |
+| `POST /preferences/language` | Save `language=ru` or `language=en` for one year and redirect home. |
 | `/static/` | Bundled styles, JavaScript, and Bootstrap assets. |
 
 For example, with development Compose running:
@@ -175,11 +176,17 @@ Implemented error responses:
 | Status | Cause |
 | --- | --- |
 | `400` | Parsing fails, the Myfin table is missing/empty/incomplete, or saving to the database fails. |
-| `417` | An upstream connection fails with aiohttp's `ClientConnectorError`. |
+| `417` | Provider connection, HTTP status, or timeout failure. |
 
-These exceptions return text error messages, including on JSON API routes.
-Other exceptions can produce `500` responses. Myfin HTML changes may require
-updating the parser in `app/service.py`.
+API errors return `{"error": {"code": "...", "message": "..."}}` with codes
+`provider_unavailable`, `provider_timeout`, `invalid_provider_response`, or
+`database_save_failed`. HTML errors return localized text. Unexpected programming
+errors produce `500` responses. Failed provider responses are never saved.
+
+Each worker creates one pooled HTTP session and its database engine during
+application startup, then closes both during cleanup. HTTP requests have a
+15-second total timeout and a 5-second connection timeout, with no retries.
+Myfin HTML changes may require updating `app/service/parsers.py`.
 
 ## Persistence and project layout
 
@@ -190,21 +197,30 @@ for reading stored history.
 
 ```text
 app/
+  Dockerfile         Application image
   server.py          Application initialization, Jinja2, and Swagger
-  routes.py          Route registration
-  views.py           HTML and JSON handlers
-  service.py         Provider requests, parsing, and persistence
-  settings.py        Environment configuration
-  database.py        Async SQLAlchemy engine and session factory
-  models.py          Response model
-  enums.py           Currency keys and display labels
-  exceptions.py      Parsing and persistence HTTP errors
-  migrations/        Alembic schema migrations
+  core/              Settings, resource lifecycle, and shared definitions
+    settings.py      Environment configuration and resource paths
+    resources.py     HTTP and database resource lifecycle
+    constants.py     Provider URLs, selectors, and timeouts
+    enums.py         Currency keys and translatable display labels
+    i18n.py          Gettext catalogs and message marker
+    exceptions.py    Shared application error types
+  web/               HTTP interface
+    routes.py        Route registration
+    views.py         HTML handlers
+    api.py           JSON handlers and Swagger definitions
+    middleware.py    Request language and localized error responses
+    context_processors.py  Template context and client messages
+    mixins.py        Shared handler context
+  utils/             Language negotiation and display rate formatting
+  locales/           Russian and English gettext catalogs
+  service/           Base orchestration and provider parsers
+  db/                Connection factory, models, repository, and Alembic
   templates/         Jinja2 pages and HTML fragments
   static/            CSS, JavaScript, and Bootstrap
-build/               Application Dockerfile
-nginx/               Nginx image and proxy configuration
-tests/               Application tests, PostgreSQL tests, and Myfin fixture
+  tests/             Application tests, PostgreSQL tests, and Myfin fixture
+docker/              Compose files, scripts, Nginx, and ignored env files
 ```
 
 ## Tests
@@ -212,8 +228,12 @@ tests/               Application tests, PostgreSQL tests, and Myfin fixture
 With dependencies installed, run from the repository root:
 
 ```sh
-python -m unittest discover -s tests -v
+pybabel compile -d app/locales
+python -m unittest discover -s app/tests -v
+node app/tests/test_dashboard.cjs
 ```
+
+The client behavior checks require Node.js and no npm packages.
 
 Tests use standard-library unittest and aiohttp test utilities, with no extra
 test dependencies. Normal tests serve fixtures through a local HTTP server and
@@ -228,8 +248,42 @@ that it does not remove.
 ```sh
 export TEST_DATABASE_URI=postgresql+asyncpg://test:test@localhost:5432/currencycheck_test
 export TEST_DATABASE_URI_MIGRATION=postgresql+psycopg2://test:test@localhost:5432/currencycheck_test
-python -m unittest discover -s tests -v
+python -m unittest discover -s app/tests -v
 ```
 
-This test verifies offline migration SQL, repeated `upgrade head`, and JSONB/text
-persistence with PostgreSQL.
+Offline migration SQL is checked without PostgreSQL. The integration test checks
+repeated `upgrade head` and JSONB/text persistence with PostgreSQL.
+
+## Localization and dashboard
+
+The dashboard has independent provider loading and refresh, local bank-name
+search, and system/light/dark themes. Manual theme preferences are stored in
+localStorage; unavailable browser storage does not prevent use. Language is
+selected from the `language` cookie, then weighted `Accept-Language`, then Russian.
+Regional variants are supported. Provider names, stored values, JSON field names
+remain unchanged. API currency labels, error messages, and missing bank names
+follow the request language; currency mapping keys and raw rate strings stay stable.
+Missing Myfin names are stored as empty strings and displayed as “Unnamed” or
+“Безымянный” in HTTP responses. HTML formats decimal separators without
+rounding rates or losing provider notes. Swagger UI is not localized.
+
+Install dependencies and compile gettext catalogs before running locally:
+
+```sh
+pybabel compile -d app/locales
+```
+
+Docker compiles catalogs during image build. To extract and update messages:
+
+```sh
+pybabel extract -F docker/babel.cfg -o app/locales/messages.pot .
+pybabel update -i app/locales/messages.pot -d app/locales --no-fuzzy-matching
+# Edit app/locales/{ru,en}/LC_MESSAGES/messages.po, then:
+pybabel compile -d app/locales
+python -m unittest discover -s app/tests -v
+```
+
+Client messages originate in the request's Jinja context and are serialized
+using Jinja's `tojson` filter. Translations are request-local; workers never
+switch a process-wide locale. Localized responses include `Content-Language`
+and vary on `Cookie` and `Accept-Language`.

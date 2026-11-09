@@ -1,26 +1,3 @@
-<div style="border: 1px solid black;
-    border-radius: 0.25rem; margin: 1em">
-    <h1 style="text-align: center">Сайт myfin.by</h1>
-    <div class="main-part-myfin">
-        <p style="text-align: center">Загрузка, пожалуйста подождите!</p>
-        <div class="d-flex justify-content-center">
-          <div class="spinner-border" role="status">
-            <span class="visually-hidden">Loading...</span>
-          </div>
-        </div>
-    </div>
-</div>
-
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
-        console.log("myfin-start-load")
-        let elemForReplace = document.querySelector(".main-part-myfin")
-        axios.get("myfin-view/")
-            .then(function (response) {
-                elemForReplace.innerHTML = response.data
-            }).catch(function (err) {
-                console.log(err);
-                elemForReplace.innerHTML = `<h4 style='text-align: center'>${ err.response.data ? err.response.data :"Ошибка загрузки данных!"}</h4>`
-        });
-    })
-</script>
+{% with source='myfin', source_icon='M', source_name='Myfin.by', source_description=_('Exchange rates across banks') %}
+    {% include 'source_section.html' %}
+{% endwith %}
